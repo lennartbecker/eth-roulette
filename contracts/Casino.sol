@@ -24,35 +24,39 @@ contract Casino {
         return true;
     }
 
-    function getRougeNoirResult() public returns (bool) {
+    function getRougeNoirPayout() public returns (bool) {
+        require(blockhash(rougenoirBlockHeight[msg.sender]) != 0, "Please make a bet first");
+        uint256 blockHash = uint256(blockhash(rougenoirBlockHeight[msg.sender]));
+        RedBlack playerBet = rougenoirBet[msg.sender];
+        RedBlack gameResult = RedBlack(blockHash % 2);
+        bool success = false;
+        
+        if (gameResult == playerBet) {
+            uint256 payout = rougenoirAmount[msg.sender] * 2;
+            emit GameResult(msg.sender, payout, true);
+            (success, ) = msg.sender.call{value: payout}("");
+        } else {
+            emit GameResult(msg.sender, 0, false);
+        }
+        resetRougeNoirGame();
+        return success;
+    }
+
+    function getRougeNoirResult() public view returns (bool) {
         require(blockhash(rougenoirBlockHeight[msg.sender]) != 0, "Please make a bet first");
         uint256 blockHash = uint256(blockhash(rougenoirBlockHeight[msg.sender]));
         RedBlack playerBet = rougenoirBet[msg.sender];
         RedBlack gameResult = RedBlack(blockHash % 2);
         
         if (gameResult == playerBet) {
-            console.log("player won");
-            uint256 payout = rougenoirAmount[msg.sender] * 2;
-            emit GameResult(msg.sender, payout, true);
-            (bool success, ) = msg.sender.call{value: payout}("");
-            return success;
-        } else {
-            console.log("player lost");
-            emit GameResult(msg.sender, 0, false);
-        }
-        resetRougeNoirGame();
+            return true;
+        } 
         return false;
     }
 
     function getContractFunds() external view returns(uint256){
         return address(this).balance;
     }
-
-
-    function getHello() external pure returns(string memory) {
-        return "Hello";
-    }
-
 
     function resetRougeNoirGame() internal {
         rougenoirAmount[msg.sender] = 0;

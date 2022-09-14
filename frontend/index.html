@@ -10,6 +10,10 @@
 <body>
     <h1 class="text-lg font-bold">Casino Test</h1>
 
+    <div class="p-4 mb-4 text-sm rounded-lg dark:bg-blue-200 dark:text-blue-800 hidden" role="alert" id="alert-wrapper">
+        <span class="font-medium" id="info-banner"></span>
+    </div>
+
 
     <input type="number" class="p-2 border border-solid border-gray-300" id="betAmount">
     <div class="flex flex-row gap-2">
@@ -18,6 +22,7 @@
         <button class="p-2 bg-green-700 text-white" id="getresult">Get Result</button>
         <button id="getblocknumber">Get Block Number</button>
     </div>
+
 
     <p>Blocknumber: <span id="blocknumber">0</span></p>
     <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
@@ -32,20 +37,12 @@
         async function main() {
             const contract = new ethers.Contract(contractAddress, abi, signer);
             let blocktowaitfor;
-            provider.on('GameResult', (player, amount, won) => {
+
+
+            provider.once('GameResult', (player, amount, won) => {
                 console.log("Gameresult")
                 console.log(player, amount, won);
             })
-            provider.on("block", (blocknumber => {
-                console.log(blocknumber,":", blocktowaitfor)
-
-                if(blocknumber >= blocktowaitfor) {
-                    console.log("Result is ready!");
-                }
-            }))
-            // wait for the transaction to be mined
-            // const receipt = await tx.wait();
-
 
             const betButtons = document.querySelectorAll('.makebet');
             const amount = document.querySelector('#betAmount');
@@ -55,49 +52,71 @@
 
             blocknumberbtn.addEventListener('click', (e) => {
                 getBlockNumber();
-            })
+            });
 
 
-            resultButton.addEventListener('click', (e) => {
-                getResult();
-            })
+            resultButton.addEventListener('click', async (e) => {
+                await getPayout();
+            });
 
             betButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
                     makeBet(button.dataset.betValue, amount.value)
                 });
-            })
+            });
 
-            await contract.on('BetMade', (one, two, three, blocknr) => {
-                console.log("Betmade: ", one, two, three, blocknr);
+            await contract.on('BetMade', (player, amount, bet, blocknr) => {
+                console.log("Betmade: ", player, amount, bet, blocknr);
                 blocktowaitfor = blocknr.toNumber();
-            })
+            });
 
             await contract.on('GameResult', (one, two, three) => {
                 console.log("Result: ", one, two, three);
-            })
+            });
 
+
+            provider.on("block", (async blocknumber => {
+                console.log(blocknumber,":", blocktowaitfor)
+
+                if(blocknumber >= blocktowaitfor) {
+                    console.log("Result is ready!");
+                    let result = await getResult();
+                    showResult(result);
+                }
+            }));
 
 
             async function makeBet(color, value) {
                 const betAmount = ethers.utils.parseEther(value);
                 const tx = await contract.setRougeNoir(color, {value: betAmount});
-                console.log(tx)
-                provider.once(tx.hash, (e) => {
-                    console.log(e)
-                })
             }
 
             async function getResult() {
                 console.log("Getting result");
-                let result = await contract.getRougeNoirResult();
-                console.log("Result:", result);
+                return await contract.getRougeNoirResult();
+            }
+
+            async function getPayout() {
+                return await contract.getRougeNoirPayout();
             }
 
             async function getBlockNumber() {
                 let blocknr =  await provider.getBlockNumber();
                 let span = document.querySelector('#blocknumber');
                 span.innerHTML = blocknr;
+            }
+
+            function showResult(won) {
+                const infoSpan = document.querySelector('#info-banner');
+                const alertWrapper = document.querySelector('#alert-wrapper');
+                alertWrapper.classList.remove('hidden');
+                if(won) {
+                    infoSpan.innerHTML = 'Congratulations, you won!';
+                    alertWrapper.classList.add('text-green-700 bg-green-100');
+                } else {
+                    infoSpan.innerHTML = 'Sorry, you lost :(';
+                    alertWrapper.classList.add('text-red-700 bg-red-100');
+                }
             }
         }
 

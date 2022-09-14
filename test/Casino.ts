@@ -32,7 +32,6 @@ describe("Casino", function () {
         const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
         const betAmount = ethers.utils.parseEther("1.0");
         const playerBet = 2;
-        // expect(await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount})).to.be.reverted;
         await expect(Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount})).to.be.revertedWithPanic('0x21');
     })
 
@@ -50,18 +49,30 @@ describe("Casino", function () {
         const betAmount = ethers.utils.parseEther("1.0");
         const playerBet = 1;
         const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount});
-        await expect( Casino.connect(otherAccount).getRougeNoirResult()).to.be.revertedWith('Please make a bet first');
+        await expect( Casino.connect(otherAccount).getRougeNoirPayout()).to.be.revertedWith('Please make a bet first');
     })
 
-    it("Should work after block was mined", async function() {
-        const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
-        const betAmount = ethers.utils.parseEther("1.0");
-        const playerBet = 1;
-        const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount});
-        mine(2);
-        console.log(await Casino.connect(otherAccount).getRougeNoirResult());
-        console.log(await Casino.getContractFunds());
-        // await expect( Casino.connect(otherAccount).getRougeNoirResult()).to.be.revertedWith('Please make a bet first');
+    // it("Should work after block was mined", async function() {
+    //     const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
+    //     const betAmount = ethers.utils.parseEther("1.0");
+    //     const playerBet = 1;
+    //     const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount});
+    //     mine(2);
+    //     console.log(await Casino.connect(otherAccount).getRougeNoirPayout());
+    //     console.log(await Casino.getContractFunds());
+    //     // await expect( Casino.connect(otherAccount).getRougeNoirPayout()).to.be.revertedWith('Please make a bet first');
+    // })
+
+    it("Should reset player blockheight", async function() {
+      const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
+      const betAmount = ethers.utils.parseEther("1.0");
+      const playerBet = 1;
+      const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount});
+      mine(2);
+      await Casino.connect(otherAccount).getRougeNoirPayout();
+      const blockHeight = await Casino.connect(otherAccount).rougenoirBlockHeight(otherAccount.address);
+      await expect(blockHeight).to.equal(0)
+      await expect(await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount})).to.not.be.reverted;
     })
 
 
