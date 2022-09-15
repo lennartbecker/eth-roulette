@@ -16,8 +16,9 @@ import { useCryptoStore } from "../stores/crypto";
 
 export default {
   setup() {
-    const { account } = storeToRefs(useCryptoStore());
-    const { connectWallet } = useCryptoStore();
+    const store = useCryptoStore();
+    const { account } = storeToRefs(store);
+    const { connectWallet } = store;
 
     return {
       connectWallet,

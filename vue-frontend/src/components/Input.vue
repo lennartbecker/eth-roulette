@@ -5,12 +5,6 @@
     class="input w-full max-w-xs mt-2"
     v-model="amount"
   />
-  <button class="btn btn-red" @click="makeRedBlackBet('RED', amount)">Red</button>
-  <button class="btn btn-black" @click="makeRedBlackBet('BLACK', amount)">
-    Black
-  </button>
-
-  {{amount}}
 </template>
 
 <script>
