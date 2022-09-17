@@ -5,6 +5,7 @@ const config: HardhatUserConfig = {
   solidity: "0.8.9",
   networks: {
     hardhat: {
+      chainId: 1337,
       mining: {
         auto: true,
         interval: 10000

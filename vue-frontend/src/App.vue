@@ -1,7 +1,7 @@
 <template>
   <Navbar />
 
-  <div class="flex flex-row p-4">
+  <div class="flex flex-row p-4" v-if="account">
     <!-- <Input /> -->
     <div class="cylinder w-1/3"></div>
     <div class="game-wrapper w-1/3 flex justify-center">
@@ -11,14 +11,7 @@
       <div class="card w-96 bg-base-100 shadow-xl">
         <div class="card-body">
           <BetInput />
-          <div class="stat">
-            <div class="stat-title">Current balance</div>
-            <div class="stat-value">0.534 ETH</div>
-            <div class="stat-actions flex gap-2">
-              <button class="btn btn-sm">Withdrawal</button>
-              <button class="btn btn-sm">deposit</button>
-            </div>
-          </div>
+          <Funds />
         </div>
       </div>
     </div>
@@ -27,9 +20,13 @@
 
 <script setup>
 import Navbar from "./components/Navbar.vue";
-import Input from "./components/Input.vue";
 import Board from "./components/Board.vue";
 import BetInput from "./components/BetInput.vue";
+import { useCryptoStore } from "./stores/crypto";
+import { storeToRefs } from "pinia";
+import Funds from "./components/Funds.vue";
+
+const { account } = storeToRefs(useCryptoStore());
 </script>
 
 <style>
@@ -53,7 +50,6 @@ import BetInput from "./components/BetInput.vue";
 .roulette-number:nth-child(odd) {
   color: red;
 }
-
 
 .color-bet {
   border: 2px solid #dad100;
