@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 import enumHelper from "../helpers/enumHelper";
 import { contractService } from "../service/contractService";
 import { useToast } from "vue-toastification";
+import confetti from "canvas-confetti";
 const toast = useToast();
 
 const gameModes = Object.freeze({
@@ -18,7 +19,6 @@ export const useCryptoStore = defineStore("crypto", {
     betAmount: 0,
     gameMode: null,
     playerBalance: ethers.BigNumber.from("0"),
-    gameRunning: false,
     gameFinished: false,
     gameWon: false,
     blockToWaitFor: false,
@@ -50,9 +50,10 @@ export const useCryptoStore = defineStore("crypto", {
         });
 
         this.account = myAccounts[0];
-        this.getBalance();
-        this.addEventListeners();
-        this.getGameState();
+        await this.getBalance();
+        await this.addEventListeners();
+        await this.getGameState();
+        await this.checkRunningGame();
       } catch (error) {
         console.log(error);
       }
@@ -94,24 +95,23 @@ export const useCryptoStore = defineStore("crypto", {
 
       provider.on("block", async (blockNumber) => {
         console.log("new block:", blockNumber);
-        if (blockNumber > this.blockToWaitFor && this.blockToWaitFor != 0) {
-          this.blockToWaitFor = false;
-          console.log("Result is ready!");
-
-          let result = await rouletteContract.getRougeNoirResult();
-          if (result) {
-            toast.success(
-              `Congratulations, you won! Click the button below to claim your prize!`
-            );
-            this.gameWon = true;
-          } else {
-            toast.error(`You lost! :(`);
-          }
-
-          this.gameFinished = true;
-          console.log("Gameresult:", result);
-        }
       });
+    },
+
+    async getGameResult() {
+      const { rouletteContract } = contractService.getContract();
+      let result = await rouletteContract.getRougeNoirResult();
+      if (result) {
+        toast.success(
+          `Congratulations, you won! Click the button below to claim your prize!`
+        );
+        confetti();
+
+        this.gameWon = true;
+      } else {
+        toast.error(`You lost! :(`);
+      }
+      this.gameFinished = true;
     },
 
     async resetGame() {
@@ -132,14 +132,23 @@ export const useCryptoStore = defineStore("crypto", {
     async getGameState() {
       try {
         const { rouletteContract, provider } = contractService.getContract();
-        const gameRunningBlockHeight = await rouletteContract.gameBlockHeight(
+        this.blockToWaitFor = await rouletteContract.gameBlockHeight(
           this.account
         );
-        this.gameRunning = gameRunningBlockHeight;
         const currentBlock = await provider.getBlock();
         this.latestBlock = currentBlock.number;
       } catch (error) {
         console.log(error);
+      }
+    },
+
+    checkRunningGame() {
+      if (
+        this.blockToWaitFor.toNumber() <= this.latestBlock &&
+        this.blockToWaitFor.toNumber() != 0
+      ) {
+        console.log("Should check running game");
+        this.getGameResult();
       }
     },
 

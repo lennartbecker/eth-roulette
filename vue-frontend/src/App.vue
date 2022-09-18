@@ -13,7 +13,7 @@
           <BetInput />
           <Funds />
 
-          <button class="btn" @click="resetGame">
+          <button class="btn" @click="resetGame" v-if="gameFinished">
             {{ resetOrClaim }}
           </button>
         </div>
@@ -35,7 +35,7 @@ const { account, gameWon, gameFinished } = storeToRefs(useCryptoStore());
 const { resetGame } = useCryptoStore();
 
 const resetOrClaim = computed(() => {
-  return gameWon ? "Claim" : "Reset";
+  return gameWon.value ? "Claim" : "Reset";
 });
 </script>
 
