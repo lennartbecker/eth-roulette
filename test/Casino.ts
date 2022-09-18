@@ -23,34 +23,48 @@ describe("Casino", function () {
     it("Contract should have correct funding", async function () {
       const { Casino, initialFunds } = await loadFixture(deployCasinoFixture);
 
-      expect(await Casino.getContractFunds()).to.equal(initialFunds)
+      expect(await Casino.getContractFunds()).to.equal(initialFunds);
     });
   });
 
-  describe("Interaction", function() {
-    it("Should revert when setting wrong enum", async function() {
-        const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
-        const betAmount = ethers.utils.parseEther("1.0");
-        const playerBet = 2;
-        await expect(Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount})).to.be.revertedWithPanic('0x21');
-    })
+  describe("Interaction", function () {
+    // it("Should revert when setting wrong enum", async function () {
+    //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
+    //   const betAmount = ethers.utils.parseEther("1.0");
+    //   const playerBet = 2;
+    //   await expect(
+    //     Casino.connect(otherAccount).setRougeNoir(playerBet, {
+    //       value: betAmount,
+    //     })
+    //   ).to.be.revertedWithPanic("0x21");
+    // });
 
-    it("Should set correct player game values", async function() {
-        const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
-        const betAmount = ethers.utils.parseEther("1.0");
-        const playerBet = 1;
-        const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount});
-        expect(await Casino.rougenoirAmount(otherAccount.address)).to.equal(betAmount);
-        expect(await Casino.rougenoirBet(otherAccount.address)).to.equal(playerBet);
-    })
+    // it("Should set correct player game values", async function () {
+    //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
+    //   const betAmount = ethers.utils.parseEther("1.0");
+    //   const playerBet = 1;
+    //   const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {
+    //     value: betAmount,
+    //   });
+    //   expect(await Casino.rougenoirAmount(otherAccount.address)).to.equal(
+    //     betAmount
+    //   );
+    //   expect(await Casino.rougenoirBet(otherAccount.address)).to.equal(
+    //     playerBet
+    //   );
+    // });
 
-    it("Should revert when block doesnt exist yet", async function() {
-        const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
-        const betAmount = ethers.utils.parseEther("1.0");
-        const playerBet = 1;
-        const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount});
-        await expect( Casino.connect(otherAccount).getRougeNoirPayout()).to.be.revertedWith('Please make a bet first');
-    })
+    // it("Should revert when block doesnt exist yet", async function () {
+    //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
+    //   const betAmount = ethers.utils.parseEther("1.0");
+    //   const playerBet = 1;
+    //   const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {
+    //     value: betAmount,
+    //   });
+    //   await expect(
+    //     Casino.connect(otherAccount).getRougeNoirPayout()
+    //   ).to.be.revertedWith("Please make a bet first");
+    // });
 
     // it("Should work after block was mined", async function() {
     //     const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
@@ -63,18 +77,39 @@ describe("Casino", function () {
     //     // await expect( Casino.connect(otherAccount).getRougeNoirPayout()).to.be.revertedWith('Please make a bet first');
     // })
 
-    it("Should reset player blockheight", async function() {
+    // it("Should reset player blockheight", async function () {
+    //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
+    //   const betAmount = ethers.utils.parseEther("1.0");
+    //   const playerBet = 1;
+    //   const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {
+    //     value: betAmount,
+    //   });
+    //   mine(2);
+    //   await Casino.connect(otherAccount).getRougeNoirPayout();
+    //   const blockHeight = await Casino.connect(
+    //     otherAccount
+    //   ).rougenoirBlockHeight(otherAccount.address);
+    //   await expect(blockHeight).to.equal(0);
+    //   await expect(
+    //     await Casino.connect(otherAccount).setRougeNoir(playerBet, {
+    //       value: betAmount,
+    //     })
+    //   ).to.not.be.reverted;
+    // });
+
+    it("Should return correct color values", async function () {
       const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
       const betAmount = ethers.utils.parseEther("1.0");
       const playerBet = 1;
-      const tx = await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount});
-      mine(2);
-      await Casino.connect(otherAccount).getRougeNoirPayout();
-      const blockHeight = await Casino.connect(otherAccount).rougenoirBlockHeight(otherAccount.address);
-      await expect(blockHeight).to.equal(0)
-      await expect(await Casino.connect(otherAccount).setRougeNoir(playerBet, {value: betAmount})).to.not.be.reverted;
-    })
-
-
-  })
+      const numColors = [];
+      for (let index = 0; index < 37; index++) {
+        const numColor = await Casino.connect(otherAccount).colorValues(index);
+        numColors.push({
+          number: index,
+          color: numColor ? 'RED': 'BLACK',
+        });
+      }
+      console.log(numColors);
+    });
+  });
 });

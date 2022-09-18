@@ -12,6 +12,10 @@
         <div class="card-body">
           <BetInput />
           <Funds />
+
+          <button class="btn" @click="resetGame">
+            {{ resetOrClaim }}
+          </button>
         </div>
       </div>
     </div>
@@ -25,8 +29,14 @@ import BetInput from "./components/BetInput.vue";
 import { useCryptoStore } from "./stores/crypto";
 import { storeToRefs } from "pinia";
 import Funds from "./components/Funds.vue";
+import { computed } from "vue";
 
-const { account } = storeToRefs(useCryptoStore());
+const { account, gameWon, gameFinished } = storeToRefs(useCryptoStore());
+const { resetGame } = useCryptoStore();
+
+const resetOrClaim = computed(() => {
+  return gameWon ? "Claim" : "Reset";
+});
 </script>
 
 <style>

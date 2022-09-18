@@ -44,11 +44,6 @@ export default {
     const { setField } = useCryptoStore();
     const { activeField } = storeToRefs(useCryptoStore());
 
-    function isSelected(e) {
-      console.log(e);
-      return "test";
-      return field == activeField ? "selected" : "";
-    }
 
     const betAvailable = computed((value) => {
       console.log(value);
@@ -58,7 +53,6 @@ export default {
     return {
       setField,
       activeField,
-      isSelected,
       betAvailable,
     };
   },

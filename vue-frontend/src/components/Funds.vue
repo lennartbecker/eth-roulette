@@ -7,6 +7,8 @@
       <label for="deposit" class="btn btn-sm">Deposit</label>
     </div>
 
+    <p>Game Running: {{ gameRunning ? true : false }}</p>
+
     <!-- Put this part before </body> tag -->
     <input type="checkbox" id="deposit" class="modal-toggle" />
     <div class="modal">
@@ -58,7 +60,7 @@ import { computed, ref } from "vue";
 
 export default {
   setup() {
-    const { playerBalance } = storeToRefs(useCryptoStore());
+    const { playerBalance, gameRunning } = storeToRefs(useCryptoStore());
     const { deposit, withdraw } = useCryptoStore();
 
     const depositAmount = ref(0);
@@ -90,6 +92,7 @@ export default {
       initiateWithdrawal,
       depositAmount,
       withdrawalAmount,
+      gameRunning,
     };
   },
 };

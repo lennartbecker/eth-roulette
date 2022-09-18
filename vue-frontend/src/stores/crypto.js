@@ -1,13 +1,10 @@
-//Balance verwaltung, ich möchte hinkriegen dass deposit & withdraw reibungslos funktioniert & korrekt updated
-
 import { ethers } from "ethers";
-import { abi } from "../../../artifacts/contracts/Casino.sol/Casino.json";
 const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 import { defineStore } from "pinia";
-import { ref } from "vue";
 import enumHelper from "../helpers/enumHelper";
-
-//GAMEMODES: Plein; Red & Black; Even & Odd; Low or High;
+import { contractService } from "../service/contractService";
+import { useToast } from "vue-toastification";
+const toast = useToast();
 
 const gameModes = Object.freeze({
   PLEIN: "Plein",
@@ -21,6 +18,11 @@ export const useCryptoStore = defineStore("crypto", {
     betAmount: 0,
     gameMode: null,
     playerBalance: ethers.BigNumber.from("0"),
+    gameRunning: false,
+    gameFinished: false,
+    gameWon: false,
+    blockToWaitFor: false,
+    latestBlock: 0,
   }),
   actions: {
     setField(field) {
@@ -47,66 +49,103 @@ export const useCryptoStore = defineStore("crypto", {
           method: "eth_requestAccounts",
         });
 
-        console.log("Connected: ", myAccounts[0]);
         this.account = myAccounts[0];
         this.getBalance();
+        this.addEventListeners();
+        this.getGameState();
       } catch (error) {
         console.log(error);
       }
     },
 
     async placeRedBlackBet() {
-      try {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const rouletteContract = new ethers.Contract(
-          contractAddress,
-          abi,
-          signer
-        );
-        const betAmount = ethers.utils.parseEther(this.betAmount.toString());
-        console.log("value;", enumHelper.getRedBlackValue(this.activeField));
-        const tx = await rouletteContract.setRougeNoir(
-          enumHelper.getRedBlackValue(this.activeField),
-          {
-            value: betAmount,
-          }
-        );
-      } catch (error) {
-        console.log(error);
-      }
+      const { rouletteContract } = contractService.getContract();
+      const betAmount = ethers.utils.parseEther(this.betAmount);
+      const tx = await rouletteContract.setRougeNoir(
+        enumHelper.getRedBlackValue(this.activeField),
+        betAmount
+      );
+      return tx;
     },
 
     async placePleinBet() {
       console.log("Plein");
     },
 
+    async addEventListeners() {
+      const { rouletteContract, provider } = contractService.getContract();
+
+      rouletteContract.on("FundsAdded", (player, amount) => {
+        this.getBalance();
+        const amountAsNumber = ethers.utils.formatEther(amount);
+        toast.success(`Deposit of ${amountAsNumber} ETH successful!`);
+      });
+
+      rouletteContract.on("FundsWithdrawn", (player, amount) => {
+        this.getBalance();
+        const amountAsNumber = ethers.utils.formatEther(amount);
+        toast.success(`Withdrawal of ${amountAsNumber} ETH successful!`);
+      });
+
+      rouletteContract.on("BetMade", (player, amount, bet, blockToWaitFor) => {
+        console.log("bet made: wait for block", blockToWaitFor);
+        this.blockToWaitFor = blockToWaitFor;
+      });
+
+      provider.on("block", async (blockNumber) => {
+        console.log("new block:", blockNumber);
+        if (blockNumber > this.blockToWaitFor && this.blockToWaitFor != 0) {
+          this.blockToWaitFor = false;
+          console.log("Result is ready!");
+
+          let result = await rouletteContract.getRougeNoirResult();
+          if (result) {
+            toast.success(
+              `Congratulations, you won! Click the button below to claim your prize!`
+            );
+            this.gameWon = true;
+          } else {
+            toast.error(`You lost! :(`);
+          }
+
+          this.gameFinished = true;
+          console.log("Gameresult:", result);
+        }
+      });
+    },
+
+    async resetGame() {
+      const { rouletteContract } = contractService.getContract();
+      const tx = await rouletteContract.getRougeNoirPayout();
+      console.log(tx);
+    },
+
     async getBalance() {
       try {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const rouletteContract = new ethers.Contract(
-          contractAddress,
-          abi,
-          signer
-        );
+        const { rouletteContract } = contractService.getContract();
         this.playerBalance = await rouletteContract.playerBalance(this.account);
-        console.log(this.playerBalance.toString());
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
+    async getGameState() {
+      try {
+        const { rouletteContract, provider } = contractService.getContract();
+        const gameRunningBlockHeight = await rouletteContract.gameBlockHeight(
+          this.account
+        );
+        this.gameRunning = gameRunningBlockHeight;
+        const currentBlock = await provider.getBlock();
+        this.latestBlock = currentBlock.number;
       } catch (error) {
         console.log(error);
       }
     },
 
     async withdraw(amount) {
-      console.log(ethers.utils.parseEther(amount));
       try {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const rouletteContract = new ethers.Contract(
-          contractAddress,
-          abi,
-          signer
-        );
+        const { rouletteContract } = contractService.getContract();
         await rouletteContract.withdraw(ethers.utils.parseEther(amount));
       } catch (error) {
         console.log(error);
@@ -115,13 +154,7 @@ export const useCryptoStore = defineStore("crypto", {
 
     async deposit(amount) {
       try {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const rouletteContract = new ethers.Contract(
-          contractAddress,
-          abi,
-          signer
-        );
+        const { signer } = contractService.getContract();
         return await signer.sendTransaction({
           to: contractAddress,
           value: ethers.utils.parseEther(amount),
@@ -134,13 +167,11 @@ export const useCryptoStore = defineStore("crypto", {
     async placeBet() {
       switch (this.gameMode) {
         case gameModes.PLEIN:
-          this.placePleinBet();
-          break;
+          return this.placePleinBet();
         case gameModes.REDNOIR:
-          this.placeRedBlackBet();
-          break;
+          return this.placeRedBlackBet();
         default:
-          break;
+          return false;
       }
     },
   },

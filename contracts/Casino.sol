@@ -7,10 +7,11 @@ contract Casino {
         BLACK,
         RED
     }
-    mapping(address => uint256) public rougenoirAmount;
+    mapping(address => uint256) public gameAmount;
+    mapping(address => uint256) public gameBlockHeight;
     mapping(address => RedBlack) public rougenoirBet;
-    mapping(address => uint256) public rougenoirBlockHeight;
     mapping(address => uint256) public playerBalance;
+    mapping(uint256 => RedBlack) public colorValues;
 
     event GameResult(address indexed player, uint256 betAmount, bool won);
     event BetMade(
@@ -22,7 +23,9 @@ contract Casino {
     event FundsAdded(address indexed player, uint256 amount);
     event FundsWithdrawn(address indexed player, uint256 amount);
 
-    constructor() payable {}
+    constructor() payable {
+        setRedValues();
+    }
 
     receive() external payable {
         playerBalance[msg.sender] += msg.value;
@@ -37,9 +40,19 @@ contract Casino {
         return success;
     }
 
+    function getRouletteNumber(uint256 blockHeight)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 blockHash = uint256(blockhash(blockHeight));
+
+        return blockHash % 37;
+    }
+
     function setRougeNoir(uint8 bet, uint256 betAmount) public returns (bool) {
         require(
-            rougenoirBlockHeight[msg.sender] == 0,
+            gameBlockHeight[msg.sender] == 0,
             "Finish your running game first!"
         );
         require(
@@ -49,9 +62,9 @@ contract Casino {
 
         RedBlack playerBet = RedBlack(bet);
 
-        rougenoirBlockHeight[msg.sender] = block.number + 2;
+        gameBlockHeight[msg.sender] = block.number + 2;
         playerBalance[msg.sender] -= betAmount;
-        rougenoirAmount[msg.sender] = betAmount;
+        gameAmount[msg.sender] = betAmount;
         rougenoirBet[msg.sender] = playerBet;
         emit BetMade(msg.sender, betAmount, playerBet, block.number + 2);
         return true;
@@ -59,40 +72,37 @@ contract Casino {
 
     function getRougeNoirPayout() public returns (bool) {
         require(
-            blockhash(rougenoirBlockHeight[msg.sender]) != 0,
+            blockhash(gameBlockHeight[msg.sender]) != 0,
             "Please make a bet first"
         );
-        uint256 blockHash = uint256(
-            blockhash(rougenoirBlockHeight[msg.sender])
-        );
-        RedBlack playerBet = rougenoirBet[msg.sender];
-        RedBlack gameResult = RedBlack(blockHash % 2);
-        bool success = false;
+        uint256 gameNumber = getRouletteNumber(gameBlockHeight[msg.sender]);
+        if (gameNumber > 0) {
+            RedBlack playerBet = rougenoirBet[msg.sender];
+            uint256 playerAmount = gameAmount[msg.sender];
+            RedBlack gameResult = getColorFromNumber(gameNumber);
 
-        if (gameResult == playerBet) {
-            uint256 payout = rougenoirAmount[msg.sender] * 2;
-            emit GameResult(msg.sender, payout, true);
-            playerBalance[msg.sender] += payout;
-        } else {
-            emit GameResult(msg.sender, 0, false);
+            if (gameResult == playerBet) {
+                playerBalance[msg.sender] += playerAmount * 2;
+            }
         }
+
         resetRougeNoirGame();
-        return success;
+        return true;
     }
 
     function getRougeNoirResult() public view returns (bool) {
         require(
-            blockhash(rougenoirBlockHeight[msg.sender]) != 0,
+            blockhash(gameBlockHeight[msg.sender]) != 0,
             "Please make a bet first"
         );
-        uint256 blockHash = uint256(
-            blockhash(rougenoirBlockHeight[msg.sender])
-        );
-        RedBlack playerBet = rougenoirBet[msg.sender];
-        RedBlack gameResult = RedBlack(blockHash % 2);
+        uint256 gameNumber = uint256(blockhash(gameBlockHeight[msg.sender]));
+        if (gameNumber > 0) {
+            RedBlack playerBet = rougenoirBet[msg.sender];
+            RedBlack gameResult = getColorFromNumber(gameNumber);
 
-        if (gameResult == playerBet) {
-            return true;
+            if (gameResult == playerBet) {
+                return true;
+            }
         }
         return false;
     }
@@ -102,7 +112,42 @@ contract Casino {
     }
 
     function resetRougeNoirGame() internal {
-        rougenoirAmount[msg.sender] = 0;
-        rougenoirBlockHeight[msg.sender] = 0;
+        gameAmount[msg.sender] = 0;
+        gameBlockHeight[msg.sender] = 0;
+    }
+
+    function getColorFromNumber(uint256 number)
+        internal
+        view
+        returns (RedBlack)
+    {
+        return RedBlack(colorValues[number]);
+    }
+
+    function setRedValues() internal returns (bool) {
+        uint8[18] memory redNumbers = [
+            1,
+            3,
+            5,
+            7,
+            9,
+            12,
+            14,
+            16,
+            18,
+            19,
+            21,
+            23,
+            25,
+            27,
+            30,
+            32,
+            34,
+            36
+        ];
+        for (uint i = 0; i < redNumbers.length; i++) {
+            colorValues[redNumbers[i]] = RedBlack.RED;
+        }
+        return true;
     }
 }
