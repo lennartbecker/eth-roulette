@@ -55,7 +55,7 @@ export const useCryptoStore = defineStore("crypto", {
         await this.getGameState();
         await this.checkRunningGame();
       } catch (error) {
-        console.log(error);
+        this.handleError(error);
       }
     },
 
@@ -95,6 +95,10 @@ export const useCryptoStore = defineStore("crypto", {
 
       provider.on("block", async (blockNumber) => {
         console.log("new block:", blockNumber);
+
+        if (blockNumber == this.blockToWaitFor) {
+          this.getGameResult();
+        }
       });
     },
 
@@ -117,7 +121,8 @@ export const useCryptoStore = defineStore("crypto", {
     async resetGame() {
       const { rouletteContract } = contractService.getContract();
       const tx = await rouletteContract.getRougeNoirPayout();
-      console.log(tx);
+      this.getGameState();
+      this.gameFinished = false;
     },
 
     async getBalance() {
@@ -138,7 +143,7 @@ export const useCryptoStore = defineStore("crypto", {
         const currentBlock = await provider.getBlock();
         this.latestBlock = currentBlock.number;
       } catch (error) {
-        console.log(error);
+        this.handleError(error);
       }
     },
 
@@ -157,19 +162,19 @@ export const useCryptoStore = defineStore("crypto", {
         const { rouletteContract } = contractService.getContract();
         await rouletteContract.withdraw(ethers.utils.parseEther(amount));
       } catch (error) {
-        console.log(error);
+        this.handleError(error);
       }
     },
 
     async deposit(amount) {
       try {
         const { signer } = contractService.getContract();
-        return await signer.sendTransaction({
+        await signer.sendTransaction({
           to: contractAddress,
           value: ethers.utils.parseEther(amount),
         });
       } catch (error) {
-        return error;
+        this.handleError(error);
       }
     },
 
@@ -181,6 +186,14 @@ export const useCryptoStore = defineStore("crypto", {
           return this.placeRedBlackBet();
         default:
           return false;
+      }
+    },
+
+    handleError(error) {
+      if (error.reason) {
+        toast.error(error.reason);
+      } else {
+        toast.error("Something went wrong, please try again!");
       }
     },
   },

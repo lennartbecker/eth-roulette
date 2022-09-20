@@ -35,7 +35,7 @@ const { account, gameWon, gameFinished } = storeToRefs(useCryptoStore());
 const { resetGame } = useCryptoStore();
 
 const resetOrClaim = computed(() => {
-  return gameWon.value ? "Claim" : "Reset";
+  return gameWon.value ? "Claim win" : "Reset game";
 });
 </script>
 

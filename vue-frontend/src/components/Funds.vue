@@ -3,21 +3,25 @@
     <div class="stat-title">Current balance</div>
     <div class="stat-value">{{ ETHbalance }} ETH</div>
     <div class="stat-actions flex gap-2">
-      <label for="withdraw" class="btn btn-sm">Withdrawal</label>
-      <label for="deposit" class="btn btn-sm">Deposit</label>
+      <button class="btn btn-sm" @click="withdrawModalOpen = true">
+        Withdrawal
+      </button>
+      <button class="btn btn-sm" @click="depositModalOpen = true">
+        Deposit
+      </button>
     </div>
 
     <p>Game Running: {{ gameRunning ? true : false }}</p>
 
-    <!-- Put this part before </body> tag -->
-    <input type="checkbox" id="deposit" class="modal-toggle" />
-    <div class="modal">
-      <div class="modal-box relative">
-        <label
-          for="deposit"
+    <div class="modal" :class="{ 'modal-open': depositModalOpen }">
+      <div class="modal-box relative" :class="{ loading: depositLoading }">
+        <span class="spinner" v-if="depositLoading"></span>
+        <button
           class="btn btn-sm btn-circle absolute right-2 top-2"
-          >✕</label
+          @click="depositModalOpen = false"
         >
+          ✕
+        </button>
         <h3 class="text-lg font-bold">Deposit funds</h3>
         <p class="py-4">
           <input
@@ -31,14 +35,15 @@
       </div>
     </div>
 
-    <input type="checkbox" id="withdraw" class="modal-toggle" />
-    <div class="modal">
-      <div class="modal-box relative">
-        <label
-          for="withdraw"
+    <div class="modal" :class="{ 'modal-open': withdrawModalOpen }">
+      <div class="modal-box relative" :class="{ loading: withdrawLoading }">
+        <span class="spinner" v-if="withdrawLoading"></span>
+        <button
           class="btn btn-sm btn-circle absolute right-2 top-2"
-          >✕</label
+          @click="withdrawModalOpen = true"
         >
+          ✕
+        </button>
         <h3 class="text-lg font-bold">Withdraw funds</h3>
         <input
           type="text"
@@ -66,19 +71,25 @@ export default {
     const depositAmount = ref(0);
     const withdrawalAmount = ref(0);
 
-    function initiateDeposit() {
-      const depositTx = deposit(String(depositAmount.value));
-      depositTx
-        .then((tx) => {
-          console.log(tx);
-        })
-        .catch((err) => {
-          console.error(err);
-        });
+    const depositModalOpen = ref(false);
+    const depositLoading = ref(false);
+    const withdrawModalOpen = ref(false);
+    const withdrawLoading = ref(false);
+
+    async function initiateDeposit() {
+      depositLoading.value = true;
+      await deposit(String(depositAmount.value));
+      depositLoading.value = false;
+      depositModalOpen.value = false;
+      depositAmount.value = 0;
     }
 
-    function initiateWithdrawal() {
-      withdraw(String(withdrawalAmount.value));
+    async function initiateWithdrawal() {
+      withdrawLoading.value = true;
+      await withdraw(String(withdrawalAmount.value));
+      withdrawLoading.value = false;
+      withdrawModalOpen.value = false;
+      withdrawalAmount.value = 0;
     }
 
     const ETHbalance = computed(() => {
@@ -93,7 +104,52 @@ export default {
       depositAmount,
       withdrawalAmount,
       gameRunning,
+      depositModalOpen,
+      depositLoading,
+      withdrawLoading,
+      withdrawModalOpen,
     };
   },
 };
 </script>
+<style lang="scss">
+.modal {
+  &.modal-open {
+    visibility: visible;
+    opacity: 1;
+    .loading {
+      &::before {
+        content: "";
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        opacity: 0.5;
+      }
+      .spinner {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        left: 50%;
+        top: 50%;
+        display: flex;
+        &::after {
+          content: "";
+          border-radius: 50%;
+          width: 32px;
+          height: 32px;
+          border: 3px solid rgba(0, 0, 0, 0.1);
+          border-top: 3px solid #555;
+          animation: 1s rotation infinite linear;
+        }
+      }
+    }
+  }
+}
+@keyframes rotation {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+</style>

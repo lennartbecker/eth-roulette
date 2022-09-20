@@ -37,7 +37,7 @@ import { ethers } from "ethers";
 
 export default {
   setup() {
-    const { betAmount, activeField, gameMode, playerBalance } = storeToRefs(
+    const { betAmount, activeField, gameMode } = storeToRefs(
       useCryptoStore()
     );
     const { placeBet } = useCryptoStore();
