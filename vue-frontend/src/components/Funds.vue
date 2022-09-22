@@ -55,6 +55,8 @@
       </div>
     </div>
   </div>
+
+  <button @click="setNumber('5')">Set number</button>
 </template>
 
 <script>
@@ -66,7 +68,7 @@ import { computed, ref } from "vue";
 export default {
   setup() {
     const { playerBalance, gameRunning } = storeToRefs(useCryptoStore());
-    const { deposit, withdraw } = useCryptoStore();
+    const { deposit, withdraw, setNumber } = useCryptoStore();
 
     const depositAmount = ref(0);
     const withdrawalAmount = ref(0);
@@ -108,6 +110,7 @@ export default {
       depositLoading,
       withdrawLoading,
       withdrawModalOpen,
+      setNumber,
     };
   },
 };

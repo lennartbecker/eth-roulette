@@ -23,11 +23,16 @@ export const useCryptoStore = defineStore("crypto", {
     gameWon: false,
     blockToWaitFor: false,
     latestBlock: 0,
+    latestNumber: 0,
   }),
   actions: {
     setField(field) {
       this.activeField = field;
       this.setGameMode(field);
+    },
+
+    setNumber(number) {
+      this.latestNumber = number;
     },
 
     setGameMode(field) {
@@ -60,13 +65,17 @@ export const useCryptoStore = defineStore("crypto", {
     },
 
     async placeRedBlackBet() {
-      const { rouletteContract } = contractService.getContract();
-      const betAmount = ethers.utils.parseEther(this.betAmount);
-      const tx = await rouletteContract.setRougeNoir(
-        enumHelper.getRedBlackValue(this.activeField),
-        betAmount
-      );
-      return tx;
+      try {
+        const { rouletteContract } = contractService.getContract();
+        const betAmount = ethers.utils.parseEther(this.betAmount);
+        const tx = await rouletteContract.setRougeNoir(
+          enumHelper.getRedBlackValue(this.activeField),
+          betAmount
+        );
+        return tx;
+      } catch (error) {
+        this.handleError(error);
+      }
     },
 
     async placePleinBet() {
@@ -110,11 +119,11 @@ export const useCryptoStore = defineStore("crypto", {
           `Congratulations, you won! Click the button below to claim your prize!`
         );
         confetti();
-
         this.gameWon = true;
       } else {
         toast.error(`You lost! :(`);
       }
+      this.getBalance();
       this.gameFinished = true;
     },
 

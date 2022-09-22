@@ -3,7 +3,9 @@
 
   <div class="flex flex-row p-4" v-if="account">
     <!-- <Input /> -->
-    <div class="cylinder w-1/3"></div>
+    <div class="cylinder w-1/3">
+      <Wheel />
+    </div>
     <div class="game-wrapper w-1/3 flex justify-center">
       <Board />
     </div>
@@ -30,6 +32,7 @@ import { useCryptoStore } from "./stores/crypto";
 import { storeToRefs } from "pinia";
 import Funds from "./components/Funds.vue";
 import { computed } from "vue";
+import Wheel from "./components/Wheel.vue";
 
 const { account, gameWon, gameFinished } = storeToRefs(useCryptoStore());
 const { resetGame } = useCryptoStore();
@@ -68,5 +71,13 @@ const resetOrClaim = computed(() => {
   width: 85px;
   height: 85px;
   transform: rotate(45deg);
+}
+
+.cylinder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-content: center;
+  align-items: center;
 }
 </style>
