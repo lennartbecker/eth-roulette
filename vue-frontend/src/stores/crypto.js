@@ -32,7 +32,7 @@ export const useCryptoStore = defineStore("crypto", {
     },
 
     setNumber(number) {
-      this.latestNumber = number;
+      this.latestNumber = Math.floor(Math.random() * 37);
     },
 
     setGameMode(field) {

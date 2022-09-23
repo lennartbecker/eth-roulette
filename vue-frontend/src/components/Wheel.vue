@@ -5,7 +5,8 @@
       src="@/assets/wheel.png"
       alt=""
       srcset=""
-      class="wheel running"
+      class="wheel"
+      :class="isRunning"
       :style="rotationStyle"
     />
   </div>
@@ -19,14 +20,20 @@ export default {
   setup() {
     const { latestNumber } = storeToRefs(useCryptoStore());
     const rotationValue = ref(0);
+    const timeOut = ref(false);
+    const isTurning = ref(false);
     const numbers = [
       0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5,
       24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
     ];
 
     watch(latestNumber, (value) => {
-      rotationValue.value = getDegreeOfNumber(value);
-      console.log("rotate to:", rotationValue.value, getDegreeOfNumber(value));
+      rotationValue.value = getDegreeOfNumber(value) + 10 * 360;
+      isTurning.value = true;
+      timeOut.value = setTimeout(() => {
+        isTurning.value = false;
+        rotationValue.value = getDegreeOfNumber(value);
+      }, 12000);
     });
 
     function getDegreeOfNumber(number) {
@@ -34,11 +41,22 @@ export default {
     }
 
     const rotationStyle = computed(() => {
-      return `transform: rotate(-${rotationValue.value + 10 * 360}deg)`;
+      if (rotationValue.value == 0) {
+        return "";
+      }
+      return `transform: rotate(-${rotationValue.value}deg)`;
+    });
+
+    const isRunning = computed(() => {
+      if (isTurning.value) {
+        return "running";
+      }
+      return;
     });
 
     return {
       rotationStyle,
+      isRunning,
     };
   },
 };
@@ -48,8 +66,8 @@ export default {
   position: relative;
   .wheel {
     &.running {
-      transition: all 10s ease 0s;
-      animation: blur 10s;
+      transition: all 5s ease 0s;
+      animation: blur 5s;
     }
   }
 
@@ -61,6 +79,24 @@ export default {
     background: white;
     left: 50%;
     transform: translateX(-50%);
+  }
+}
+
+@keyframes blur {
+  0% {
+    filter: blur(1px);
+  }
+  25% {
+    filter: blur(3px);
+  }
+  70% {
+    filter: blur(2px);
+  }
+  90% {
+    filter: blur(1px);
+  }
+  100% {
+    filter: blur(0%);
   }
 }
 </style>
