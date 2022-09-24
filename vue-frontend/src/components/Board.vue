@@ -46,7 +46,6 @@ export default {
 
 
     const betAvailable = computed((value) => {
-      console.log(value);
       // return betAmount.value > 0 && activeField.value != "" ? '' : 'disabled'
     });
 

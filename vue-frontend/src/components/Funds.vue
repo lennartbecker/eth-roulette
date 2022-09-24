@@ -1,7 +1,10 @@
 <template>
   <div class="stat pl-0">
     <div class="stat-title">Current balance</div>
-    <div class="stat-value">{{ ETHbalance }} ETH</div>
+    <div class="stat-value flex items-center">
+      <span class="mr-2"> {{ ETHbalance }} ETH</span>
+      <Spinner v-if="balancePending" />
+    </div>
     <div class="stat-actions flex gap-2">
       <button class="btn btn-sm" @click="withdrawModalOpen = true">
         Withdrawal
@@ -10,9 +13,6 @@
         Deposit
       </button>
     </div>
-
-    <p>Game Running: {{ gameRunning ? true : false }}</p>
-
     <div class="modal" :class="{ 'modal-open': depositModalOpen }">
       <div class="modal-box relative" :class="{ loading: depositLoading }">
         <span class="spinner" v-if="depositLoading"></span>
@@ -55,8 +55,6 @@
       </div>
     </div>
   </div>
-
-  <button @click="setNumber('5')">Set number</button>
 </template>
 
 <script>
@@ -64,20 +62,20 @@ import { useCryptoStore } from "../stores/crypto";
 import { storeToRefs } from "pinia";
 import { ethers } from "ethers";
 import { computed, ref } from "vue";
+import Spinner from "./Spinner.vue";
 
 export default {
   setup() {
-    const { playerBalance, gameRunning } = storeToRefs(useCryptoStore());
-    const { deposit, withdraw, setNumber } = useCryptoStore();
-
+    const { playerBalance, gameRunning, balancePending } = storeToRefs(
+      useCryptoStore()
+    );
+    const { deposit, withdraw } = useCryptoStore();
     const depositAmount = ref(0);
     const withdrawalAmount = ref(0);
-
     const depositModalOpen = ref(false);
     const depositLoading = ref(false);
     const withdrawModalOpen = ref(false);
     const withdrawLoading = ref(false);
-
     async function initiateDeposit() {
       depositLoading.value = true;
       await deposit(String(depositAmount.value));
@@ -85,7 +83,6 @@ export default {
       depositModalOpen.value = false;
       depositAmount.value = 0;
     }
-
     async function initiateWithdrawal() {
       withdrawLoading.value = true;
       await withdraw(String(withdrawalAmount.value));
@@ -93,16 +90,14 @@ export default {
       withdrawModalOpen.value = false;
       withdrawalAmount.value = 0;
     }
-
     const ETHbalance = computed(() => {
-      const remainder = playerBalance.value.mod(1e14);
+      const remainder = playerBalance.value.mod(100000000000000);
       return ethers.utils.formatEther(playerBalance.value.sub(remainder));
     });
-
     return {
-      ETHbalance,
       initiateDeposit,
       initiateWithdrawal,
+      ETHbalance,
       depositAmount,
       withdrawalAmount,
       gameRunning,
@@ -110,9 +105,10 @@ export default {
       depositLoading,
       withdrawLoading,
       withdrawModalOpen,
-      setNumber,
+      balancePending,
     };
   },
+  components: { Spinner },
 };
 </script>
 <style lang="scss">

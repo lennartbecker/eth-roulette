@@ -8,7 +8,7 @@ const config: HardhatUserConfig = {
       chainId: 1337,
       mining: {
         auto: true,
-        interval: 10000
+        interval: 5000
       }
     },
     ganache: {

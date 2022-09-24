@@ -14,6 +14,7 @@ const contractService = {
       };
     }
     this.provider = new ethers.providers.Web3Provider(ethereum);
+
     this.signer = this.provider.getSigner();
     this.rouletteContract = new ethers.Contract(
       contractAddress,

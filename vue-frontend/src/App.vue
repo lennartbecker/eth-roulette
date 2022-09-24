@@ -2,7 +2,6 @@
   <Navbar />
 
   <div class="flex flex-row p-4" v-if="account">
-    <!-- <Input /> -->
     <div class="cylinder w-1/3">
       <Wheel />
     </div>
@@ -14,10 +13,8 @@
         <div class="card-body">
           <BetInput />
           <Funds />
+          <GameInfo />
 
-          <button class="btn" @click="resetGame" v-if="gameFinished">
-            {{ resetOrClaim }}
-          </button>
         </div>
       </div>
     </div>
@@ -33,13 +30,20 @@ import { storeToRefs } from "pinia";
 import Funds from "./components/Funds.vue";
 import { computed } from "vue";
 import Wheel from "./components/Wheel.vue";
+import GameInfo from "./components/GameInfo.vue";
 
-const { account, gameWon, gameFinished } = storeToRefs(useCryptoStore());
+const { account, gameWon, gameRunning, blockToWaitFor } = storeToRefs(useCryptoStore());
 const { resetGame } = useCryptoStore();
+
+console.log(blockToWaitFor.value);
 
 const resetOrClaim = computed(() => {
   return gameWon.value ? "Claim win" : "Reset game";
 });
+
+const gameFinished = computed(() => {
+  return blockToWaitFor.value.toNumber() != 0 && !gameRunning.value;
+})
 </script>
 
 <style>

@@ -8,15 +8,11 @@
       class="input input-bordered input-md w-full max-w-xs w-2/3"
       v-model="betAmount"
     />
-    <button
-      :class="betAvailable"
-      class="btn"
-      @click="modalOpen = true"
-      :title="toolTipMsg"
-    >
+    <button :class="betAvailable" class="btn" @click="modalOpen = true">
       Place bet
     </button>
   </div>
+
 
   <div class="modal" :class="{ 'modal-open': modalOpen }">
     <div class="modal-box" :class="{ loading: confirmLoading }">
@@ -41,7 +37,7 @@ import { ethers } from "ethers";
 
 export default {
   setup() {
-    const { betAmount, activeField, gameMode, gameFinished, playerBalance } =
+    const { betAmount, activeField, gameMode, playerBalance, gameRunning } =
       storeToRefs(useCryptoStore());
     const { placeBet } = useCryptoStore();
 
@@ -51,18 +47,10 @@ export default {
     const betAvailable = computed(() => {
       return betAmount.value > 0 &&
         activeField.value != "" &&
-        gameFinished &&
-        playerBalance.value.toString() != "0"
+        playerBalance.value.toString() != "0" &&
+        !gameRunning.value
         ? ""
         : "btn-disabled";
-    });
-
-    const toolTipMsg = computed(() => {
-      if (!gameFinished) {
-        return "Please reset your running game first!";
-      } else {
-        return "Please enter a bet amount & select a field!";
-      }
     });
 
     function closeModal() {
@@ -91,7 +79,6 @@ export default {
       modalOpen,
       confirmLoading,
       closeModal,
-      toolTipMsg,
     };
   },
 };

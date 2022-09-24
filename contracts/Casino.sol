@@ -13,6 +13,8 @@ contract Casino {
     mapping(address => uint256) public playerBalance;
     mapping(uint256 => RedBlack) public colorValues;
 
+    uint256 public contractFunds = 0;
+
     event GameResult(address indexed player, uint256 betAmount, bool won);
     event BetMade(
         address indexed player,
@@ -24,6 +26,7 @@ contract Casino {
     event FundsWithdrawn(address indexed player, uint256 amount);
 
     constructor() payable {
+        contractFunds = msg.value;
         setRedValues();
     }
 
@@ -62,11 +65,12 @@ contract Casino {
 
         RedBlack playerBet = RedBlack(bet);
 
-        gameBlockHeight[msg.sender] = block.number + 2;
+        gameBlockHeight[msg.sender] = block.number + 1;
         playerBalance[msg.sender] -= betAmount;
+        contractFunds += betAmount;
         gameAmount[msg.sender] = betAmount;
         rougenoirBet[msg.sender] = playerBet;
-        emit BetMade(msg.sender, betAmount, playerBet, block.number + 2);
+        emit BetMade(msg.sender, betAmount, playerBet, block.number + 1);
         return true;
     }
 
@@ -83,6 +87,7 @@ contract Casino {
 
             if (gameResult == playerBet) {
                 playerBalance[msg.sender] += playerAmount * 2;
+                contractFunds -= playerAmount * 2;
             }
         }
 
@@ -90,25 +95,13 @@ contract Casino {
         return true;
     }
 
-    function getRougeNoirResult() public view returns (bool) {
+    function getRougeNoirResult() public view returns (uint256) {
         require(
             blockhash(gameBlockHeight[msg.sender]) != 0,
             "Please make a bet first"
         );
-        uint256 gameNumber = uint256(blockhash(gameBlockHeight[msg.sender]));
-        if (gameNumber > 0) {
-            RedBlack playerBet = rougenoirBet[msg.sender];
-            RedBlack gameResult = getColorFromNumber(gameNumber);
-
-            if (gameResult == playerBet) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function getContractFunds() external view returns (uint256) {
-        return address(this).balance;
+        uint256 gameNumber = getRouletteNumber(gameBlockHeight[msg.sender]);
+        return gameNumber;
     }
 
     function resetRougeNoirGame() internal {

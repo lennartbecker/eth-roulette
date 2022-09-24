@@ -28,6 +28,7 @@ export default {
     ];
 
     watch(latestNumber, (value) => {
+      console.log("number updated");
       rotationValue.value = getDegreeOfNumber(value) + 10 * 360;
       isTurning.value = true;
       timeOut.value = setTimeout(() => {

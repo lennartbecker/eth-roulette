@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 import { defineStore } from "pinia";
-import enumHelper from "../helpers/enumHelper";
+import rouletteHelper from "../helpers/rouletteHelper";
 import { contractService } from "../service/contractService";
 import { useToast } from "vue-toastification";
 import confetti from "canvas-confetti";
@@ -19,30 +19,16 @@ export const useCryptoStore = defineStore("crypto", {
     betAmount: 0,
     gameMode: null,
     playerBalance: ethers.BigNumber.from("0"),
-    gameFinished: false,
     gameWon: false,
-    blockToWaitFor: false,
+    blockToWaitFor: ethers.BigNumber.from("0"),
+    gameRunning: false,
     latestBlock: 0,
     latestNumber: 0,
+    bankBalance: ethers.BigNumber.from("0"),
+    balancePending: false,
+    fetchingGameResult: false,
   }),
   actions: {
-    setField(field) {
-      this.activeField = field;
-      this.setGameMode(field);
-    },
-
-    setNumber(number) {
-      this.latestNumber = Math.floor(Math.random() * 37);
-    },
-
-    setGameMode(field) {
-      if (typeof field == "number") {
-        this.gameMode = gameModes.PLEIN;
-      } else {
-        this.gameMode = gameModes.REDNOIR;
-      }
-    },
-
     async connectWallet() {
       try {
         const { ethereum } = window;
@@ -55,136 +41,40 @@ export const useCryptoStore = defineStore("crypto", {
         });
 
         this.account = myAccounts[0];
-        await this.getBalance();
+        await this.fetchBalance();
         await this.addEventListeners();
-        await this.getGameState();
+        await this.fetchGameState();
         await this.checkRunningGame();
       } catch (error) {
         this.handleError(error);
       }
     },
 
-    async placeRedBlackBet() {
-      try {
-        const { rouletteContract } = contractService.getContract();
-        const betAmount = ethers.utils.parseEther(this.betAmount);
-        const tx = await rouletteContract.setRougeNoir(
-          enumHelper.getRedBlackValue(this.activeField),
-          betAmount
-        );
-        return tx;
-      } catch (error) {
-        this.handleError(error);
-      }
+    setField(field) {
+      this.activeField = field;
+      this.setGameMode(field);
     },
 
-    async placePleinBet() {
-      console.log("Plein");
+    setNumber(number) {
+      this.latestNumber = number;
     },
 
-    async addEventListeners() {
-      const { rouletteContract, provider } = contractService.getContract();
-
-      rouletteContract.on("FundsAdded", (player, amount) => {
-        this.getBalance();
-        const amountAsNumber = ethers.utils.formatEther(amount);
-        toast.success(`Deposit of ${amountAsNumber} ETH successful!`);
-      });
-
-      rouletteContract.on("FundsWithdrawn", (player, amount) => {
-        this.getBalance();
-        const amountAsNumber = ethers.utils.formatEther(amount);
-        toast.success(`Withdrawal of ${amountAsNumber} ETH successful!`);
-      });
-
-      rouletteContract.on("BetMade", (player, amount, bet, blockToWaitFor) => {
-        console.log("bet made: wait for block", blockToWaitFor);
-        this.blockToWaitFor = blockToWaitFor;
-      });
-
-      provider.on("block", async (blockNumber) => {
-        console.log("new block:", blockNumber);
-
-        if (blockNumber == this.blockToWaitFor) {
-          this.getGameResult();
-        }
-      });
-    },
-
-    async getGameResult() {
-      const { rouletteContract } = contractService.getContract();
-      let result = await rouletteContract.getRougeNoirResult();
-      if (result) {
-        toast.success(
-          `Congratulations, you won! Click the button below to claim your prize!`
-        );
-        confetti();
-        this.gameWon = true;
+    setGameMode(field) {
+      if (typeof field == "number") {
+        this.gameMode = gameModes.PLEIN;
       } else {
-        toast.error(`You lost! :(`);
+        this.gameMode = gameModes.REDNOIR;
       }
-      this.getBalance();
-      this.gameFinished = true;
     },
 
-    async resetGame() {
+    async getActiveField() {
       const { rouletteContract } = contractService.getContract();
-      const tx = await rouletteContract.getRougeNoirPayout();
-      this.getGameState();
-      this.gameFinished = false;
+      let playerBet = await rouletteContract.rougenoirBet(this.account);
+      this.activeField = rouletteHelper.enumToColor(playerBet);
     },
 
-    async getBalance() {
-      try {
-        const { rouletteContract } = contractService.getContract();
-        this.playerBalance = await rouletteContract.playerBalance(this.account);
-      } catch (error) {
-        console.log(error);
-      }
-    },
-
-    async getGameState() {
-      try {
-        const { rouletteContract, provider } = contractService.getContract();
-        this.blockToWaitFor = await rouletteContract.gameBlockHeight(
-          this.account
-        );
-        const currentBlock = await provider.getBlock();
-        this.latestBlock = currentBlock.number;
-      } catch (error) {
-        this.handleError(error);
-      }
-    },
-
-    checkRunningGame() {
-      if (
-        this.blockToWaitFor.toNumber() <= this.latestBlock &&
-        this.blockToWaitFor.toNumber() != 0
-      ) {
-        console.log("Should check running game");
-        this.getGameResult();
-      }
-    },
-
-    async withdraw(amount) {
-      try {
-        const { rouletteContract } = contractService.getContract();
-        await rouletteContract.withdraw(ethers.utils.parseEther(amount));
-      } catch (error) {
-        this.handleError(error);
-      }
-    },
-
-    async deposit(amount) {
-      try {
-        const { signer } = contractService.getContract();
-        await signer.sendTransaction({
-          to: contractAddress,
-          value: ethers.utils.parseEther(amount),
-        });
-      } catch (error) {
-        this.handleError(error);
-      }
+    setLatestBlockNumber(block) {
+      this.latestBlock = block;
     },
 
     async placeBet() {
@@ -198,10 +88,152 @@ export const useCryptoStore = defineStore("crypto", {
       }
     },
 
+    async placeRedBlackBet() {
+      try {
+        const { rouletteContract } = contractService.getContract();
+        const betAmount = ethers.utils.parseEther(this.betAmount);
+        const tx = await rouletteContract.setRougeNoir(
+          rouletteHelper.getRedBlackValue(this.activeField),
+          betAmount
+        );
+        this.gameRunning = true;
+        return tx;
+      } catch (error) {
+        this.handleError(error);
+      }
+    },
+
+    async placePleinBet() {
+      console.log("Plein");
+    },
+
+    async getGameResult() {
+      console.log("getGameResult");
+      this.fetchingGameResult = true;
+      const { rouletteContract } = contractService.getContract();
+      let result = await rouletteContract.getRougeNoirResult();
+      this.setNumber(result.toString());
+      setTimeout(() => {
+        if (
+          rouletteHelper.getFieldColor(result.toString()) == this.activeField
+        ) {
+          toast.success(
+            `Congratulations, you won! Click the button below to claim your prize!`
+          );
+          confetti();
+          this.gameWon = true;
+        } else {
+          toast.error(`You lost! :( Dont forget to reset your game!`);
+        }
+        this.gameRunning = false;
+        this.fetchBalance();
+        this.fetchingGameResult = false;
+      }, 5000);
+    },
+
+    async resetGame() {
+      const { rouletteContract } = contractService.getContract();
+      this.gameRunning = false;
+      const tx = await rouletteContract.getRougeNoirPayout();
+      console.log(tx);
+      this.blockToWaitFor = ethers.BigNumber.from("0");
+      this.gameWon = false;
+      this.fetchBalance();
+    },
+
+    async fetchBalance() {
+      try {
+        const { rouletteContract } = contractService.getContract();
+        this.playerBalance = await rouletteContract.playerBalance(this.account);
+        this.bankBalance = await rouletteContract.contractFunds();
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
+    async fetchGameState() {
+      try {
+        const { rouletteContract, provider } = contractService.getContract();
+        this.blockToWaitFor = await rouletteContract.gameBlockHeight(
+          this.account
+        );
+        const currentBlock = await provider.getBlock();
+        this.setLatestBlockNumber(currentBlock.number);
+      } catch (error) {
+        this.handleError(error);
+      }
+    },
+
+    checkRunningGame() {
+      if (
+        this.blockToWaitFor.toNumber() == this.latestBlock &&
+        this.blockToWaitFor.toNumber() != 0
+      ) {
+        this.getActiveField();
+        this.getGameResult();
+      }
+    },
+
+    async withdraw(amount) {
+      try {
+        this.balancePending = true;
+        const { rouletteContract } = contractService.getContract();
+        await rouletteContract.withdraw(ethers.utils.parseEther(amount));
+      } catch (error) {
+        this.handleError(error);
+      }
+    },
+
+    async deposit(amount) {
+      try {
+        const { signer } = contractService.getContract();
+        this.balancePending = true;
+        await signer.sendTransaction({
+          to: contractAddress,
+          value: ethers.utils.parseEther(amount),
+        });
+      } catch (error) {
+        this.handleError(error);
+      }
+    },
+
+    async addEventListeners() {
+      const { rouletteContract, provider } = contractService.getContract();
+
+      rouletteContract.on("FundsAdded", async (player, amount) => {
+        await this.fetchBalance();
+        const amountAsNumber = ethers.utils.formatEther(amount);
+        toast.success(`Deposit of ${amountAsNumber} ETH successful!`);
+        this.balancePending = false;
+      });
+
+      rouletteContract.on("FundsWithdrawn", (player, amount) => {
+        this.fetchBalance();
+        const amountAsNumber = ethers.utils.formatEther(amount);
+        toast.success(`Withdrawal of ${amountAsNumber} ETH successful!`);
+        this.balancePending = false;
+      });
+
+      rouletteContract.on("BetMade", (player, amount, bet, blockToWaitFor) => {
+        console.log("bet event: wait for block ", blockToWaitFor.toString());
+        toast.success("Bet transaction has been processed.");
+        this.blockToWaitFor = blockToWaitFor;
+      });
+
+      provider.on("block", (blockNumber) => {
+        this.setLatestBlockNumber(blockNumber);
+
+        if (blockNumber >= this.blockToWaitFor.toNumber() && this.gameRunning && !this.fetchingGameResult) {
+          this.getGameResult();
+        }
+      });
+    },
+
     handleError(error) {
       if (error.reason) {
         toast.error(error.reason);
       } else {
+        console.log(error);
         toast.error("Something went wrong, please try again!");
       }
     },
