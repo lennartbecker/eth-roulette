@@ -14,7 +14,6 @@
           <BetInput />
           <Funds />
           <GameInfo />
-
         </div>
       </div>
     </div>
@@ -32,7 +31,9 @@ import { computed } from "vue";
 import Wheel from "./components/Wheel.vue";
 import GameInfo from "./components/GameInfo.vue";
 
-const { account, gameWon, gameRunning, blockToWaitFor } = storeToRefs(useCryptoStore());
+const { account, gameWon, gameRunning, blockToWaitFor } = storeToRefs(
+  useCryptoStore()
+);
 const { resetGame } = useCryptoStore();
 
 console.log(blockToWaitFor.value);
@@ -43,38 +44,18 @@ const resetOrClaim = computed(() => {
 
 const gameFinished = computed(() => {
   return blockToWaitFor.value.toNumber() != 0 && !gameRunning.value;
-})
+});
 </script>
 
 <style>
+html, body {
+  background-color: #1e293b;
+  height: 100%;
+}
 #app {
-  background-color: green;
-  height: 100vh;
-}
-.roulette-board {
-  max-width: 300px;
-  border: 1px solid #dad100;
-}
-.roulette-number {
-  font-size: 2rem;
-  border: 1px solid #dad100;
-  font-weight: bold;
-  font-family: "Times New Roman", Times, serif;
-}
-.roulette-number:nth-child(even) {
-  color: black;
-}
-.roulette-number:nth-child(odd) {
-  color: red;
-}
-
-.color-bet {
-  border: 2px solid #dad100;
-}
-.diamond {
-  width: 85px;
-  height: 85px;
-  transform: rotate(45deg);
+  background-color: #1e293b;
+  height: 100%;
+  font-family: "Inter Tight", sans-serif;
 }
 
 .cylinder {
@@ -84,4 +65,6 @@ const gameFinished = computed(() => {
   align-content: center;
   align-items: center;
 }
+
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600&display=swap");
 </style>

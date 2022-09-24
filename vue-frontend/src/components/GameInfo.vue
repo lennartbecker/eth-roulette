@@ -27,7 +27,7 @@ export default {
     const { latestBlock, blockToWaitFor, gameWon, gameRunning } = storeToRefs(
       useCryptoStore()
     );
-    const { resetGame } = useCryptoStore();
+    const { resetGame, getGameResult } = useCryptoStore();
     const resultBlock = computed(() => {
       return blockToWaitFor.value.toString != "0" && gameRunning.value;
     });
@@ -45,6 +45,7 @@ export default {
       gameRunning,
       resetOrClaim,
       resetGame,
+      getGameResult,
     };
   },
   components: { Spinner },

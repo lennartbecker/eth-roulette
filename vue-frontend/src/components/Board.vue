@@ -1,14 +1,5 @@
 <template>
-  <div class="flex">
-    <div class="left-pads flex flex-column items-end">
-      <div
-        class="h-1/3 w-40 color-bet flex justify-center items-center"
-        @click="setField('BLACK')"
-        :class="activeField == 'BLACK' ? 'selected' : ''"
-      >
-        <div class="diamond bg-black"></div>
-      </div>
-    </div>
+  <div class="flex flex-col board-wrapper">
     <div class="grid grid-cols-3 roulette-board">
       <div
         class="roulette-number py-2 px-6 cursor-pointer flex justify-center items-center"
@@ -18,17 +9,22 @@
       >
         {{ i }}
       </div>
-      <!-- <div class="roulette-bet-field p-4 cursor-pointer" v-for="i in 3">
-            2 in 1
-          </div> -->
     </div>
-    <div class="right-pads flex flex-column items-end">
+    <div class="roulette-board"></div>
+    <div class="roulette-board flex">
       <div
-        class="h-1/3 color-bet w-40 flex justify-center items-center"
+        class="w-1/2 h-16 bet-red flex text-white items-center justify-center roulette-field"
         @click="setField('RED')"
         :class="activeField == 'RED' ? 'selected' : ''"
       >
-        <div class="diamond bg-red-700"></div>
+        Red
+      </div>
+      <div
+        class="w-1/2 h-16 bet-black flex text-white items-center justify-center roulette-field"
+        @click="setField('BLACK')"
+        :class="activeField == 'BLACK' ? 'selected' : ''"
+      >
+        Black
       </div>
     </div>
   </div>
@@ -44,7 +40,6 @@ export default {
     const { setField } = useCryptoStore();
     const { activeField } = storeToRefs(useCryptoStore());
 
-
     const betAvailable = computed((value) => {
       // return betAmount.value > 0 && activeField.value != "" ? '' : 'disabled'
     });
@@ -58,7 +53,39 @@ export default {
 };
 </script>
 <style>
+.board-wrapper {
+  box-shadow: 0px 0px 10px 0px black;
+}
 .selected {
-  background-color: rgba(255,255,126, .2);
+  box-shadow: inset 0px 0px 0px 3px white;
+}
+.roulette-board {
+  max-width: 225px;
+}
+.roulette-number,
+.roulette-field {
+  font-size: 1.5rem;
+  font-family: "Inter Tight", sans-serif;
+  color: white;
+}
+.roulette-number:nth-child(even) {
+  background-color: #292524;
+}
+.roulette-number:nth-child(odd) {
+  background-color: #dc2626;
+}
+
+.bet-red {
+  background-color: #dc2626;
+}
+
+.bet-black {
+  background-color: #292524;
+}
+
+.diamond {
+  width: 30px;
+  height: 30px;
+  transform: rotate(45deg);
 }
 </style>

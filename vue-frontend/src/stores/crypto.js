@@ -27,6 +27,7 @@ export const useCryptoStore = defineStore("crypto", {
     bankBalance: ethers.BigNumber.from("0"),
     balancePending: false,
     fetchingGameResult: false,
+    resettingGame: false,
   }),
   actions: {
     async connectWallet() {
@@ -44,7 +45,7 @@ export const useCryptoStore = defineStore("crypto", {
         await this.fetchBalance();
         await this.addEventListeners();
         await this.fetchGameState();
-        await this.checkRunningGame();
+        // await this.checkRunningGame();
       } catch (error) {
         this.handleError(error);
       }
@@ -108,7 +109,6 @@ export const useCryptoStore = defineStore("crypto", {
     },
 
     async getGameResult() {
-      console.log("getGameResult");
       this.fetchingGameResult = true;
       const { rouletteContract } = contractService.getContract();
       let result = await rouletteContract.getRougeNoirResult();
@@ -134,11 +134,9 @@ export const useCryptoStore = defineStore("crypto", {
     async resetGame() {
       const { rouletteContract } = contractService.getContract();
       this.gameRunning = false;
-      const tx = await rouletteContract.getRougeNoirPayout();
-      console.log(tx);
       this.blockToWaitFor = ethers.BigNumber.from("0");
       this.gameWon = false;
-      this.fetchBalance();
+      rouletteContract.getRougeNoirPayout().then(this.fetchBalance());
     },
 
     async fetchBalance() {
@@ -166,7 +164,7 @@ export const useCryptoStore = defineStore("crypto", {
 
     checkRunningGame() {
       if (
-        this.blockToWaitFor.toNumber() == this.latestBlock &&
+        this.blockToWaitFor.toNumber() >= this.latestBlock &&
         this.blockToWaitFor.toNumber() != 0
       ) {
         this.getActiveField();
@@ -220,10 +218,25 @@ export const useCryptoStore = defineStore("crypto", {
         this.blockToWaitFor = blockToWaitFor;
       });
 
+      rouletteContract.on("GameReset", (player) => {
+        toast.success("Game has been reset");
+      });
+
       provider.on("block", (blockNumber) => {
         this.setLatestBlockNumber(blockNumber);
 
-        if (blockNumber >= this.blockToWaitFor.toNumber() && this.gameRunning && !this.fetchingGameResult) {
+        if (
+          blockNumber >= this.blockToWaitFor.toNumber() &&
+          this.blockToWaitFor.toNumber() != 0 &&
+          this.gameRunning &&
+          !this.fetchingGameResult
+        ) {
+          console.log(
+            blockNumber,
+            this.blockToWaitFor.toNumber(),
+            this.gameRunning,
+            this.fetchingGameResult
+          );
           this.getGameResult();
         }
       });

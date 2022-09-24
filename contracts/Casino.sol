@@ -24,6 +24,7 @@ contract Casino {
     );
     event FundsAdded(address indexed player, uint256 amount);
     event FundsWithdrawn(address indexed player, uint256 amount);
+    event GameReset(address indexed player);
 
     constructor() payable {
         contractFunds = msg.value;
@@ -105,6 +106,7 @@ contract Casino {
     }
 
     function resetRougeNoirGame() internal {
+        emit GameReset(msg.sender);
         gameAmount[msg.sender] = 0;
         gameBlockHeight[msg.sender] = 0;
     }
