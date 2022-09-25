@@ -91,14 +91,18 @@ export const useCryptoStore = defineStore("crypto", {
 
     async placeRedBlackBet() {
       try {
-        const { rouletteContract } = contractService.getContract();
-        const betAmount = ethers.utils.parseEther(this.betAmount);
-        const tx = await rouletteContract.setRougeNoir(
-          rouletteHelper.getRedBlackValue(this.activeField),
-          betAmount
-        );
-        this.gameRunning = true;
-        return tx;
+        if (this.bankBalance.gte(ethers.utils.parseEther(this.betAmount))) {
+          const { rouletteContract } = contractService.getContract();
+          const betAmount = ethers.utils.parseEther(this.betAmount);
+          const tx = await rouletteContract.setRougeNoir(
+            rouletteHelper.getRedBlackValue(this.activeField),
+            betAmount
+          );
+          this.gameRunning = true;
+          return tx;
+        } else {
+          toast.error(`Bet is too large`);
+        }
       } catch (error) {
         this.handleError(error);
       }
@@ -109,34 +113,36 @@ export const useCryptoStore = defineStore("crypto", {
     },
 
     async getGameResult() {
-      this.fetchingGameResult = true;
-      const { rouletteContract } = contractService.getContract();
-      let result = await rouletteContract.getRougeNoirResult();
-      this.setNumber(result.toString());
-      setTimeout(() => {
-        if (
-          rouletteHelper.getFieldColor(result.toString()) == this.activeField
-        ) {
-          toast.success(
-            `Congratulations, you won! Click the button below to claim your prize!`
-          );
-          confetti();
-          this.gameWon = true;
-        } else {
-          toast.error(`You lost! :( Dont forget to reset your game!`);
-        }
-        this.gameRunning = false;
-        this.fetchBalance();
-        this.fetchingGameResult = false;
-      }, 5000);
+      try {
+        this.fetchingGameResult = true;
+        const { rouletteContract } = contractService.getContract();
+        let result = await rouletteContract.getRougeNoirResult();
+        this.setNumber(result.toString());
+        setTimeout(() => {
+          if (
+            rouletteHelper.getFieldColor(result.toString()) == this.activeField
+          ) {
+            toast.success(
+              `Congratulations, you won! Click the button below to claim your prize!`
+            );
+            confetti();
+            this.gameWon = true;
+          } else {
+            toast.error(`You lost! :( Dont forget to reset your game!`);
+            this.fetchBalance();
+          }
+          this.gameRunning = false;
+          this.fetchingGameResult = false;
+        }, 5000);
+      } catch (error) {
+        this.handleError(error);
+      }
     },
 
     async resetGame() {
       const { rouletteContract } = contractService.getContract();
-      this.gameRunning = false;
-      this.blockToWaitFor = ethers.BigNumber.from("0");
-      this.gameWon = false;
-      rouletteContract.getRougeNoirPayout().then(this.fetchBalance());
+      await rouletteContract.getRougeNoirPayout();
+      this.resettingGame = true;
     },
 
     async fetchBalance() {
@@ -220,10 +226,16 @@ export const useCryptoStore = defineStore("crypto", {
 
       rouletteContract.on("GameReset", (player) => {
         toast.success("Game has been reset");
+        this.resettingGame = false;
+        this.gameWon = false;
+        this.gameRunning = false;
+        this.blockToWaitFor = ethers.BigNumber.from("0");
+        this.fetchBalance();
       });
 
-      provider.on("block", (blockNumber) => {
+      provider.on("block", async (blockNumber) => {
         this.setLatestBlockNumber(blockNumber);
+        console.log("new block:", blockNumber);
 
         if (
           blockNumber >= this.blockToWaitFor.toNumber() &&
@@ -237,7 +249,7 @@ export const useCryptoStore = defineStore("crypto", {
             this.gameRunning,
             this.fetchingGameResult
           );
-          this.getGameResult();
+          await this.getGameResult();
         }
       });
     },

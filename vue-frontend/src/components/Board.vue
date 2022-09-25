@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col board-wrapper">
-    <div class="grid grid-cols-3 roulette-board">
+    <div class="grid grid-cols-3 roulette-board border-b-0">
       <div
         class="roulette-number py-2 px-6 cursor-pointer flex justify-center items-center"
         v-for="i in 36"
@@ -10,8 +10,7 @@
         {{ i }}
       </div>
     </div>
-    <div class="roulette-board"></div>
-    <div class="roulette-board flex">
+    <div class="roulette-board flex border-t-0">
       <div
         class="w-1/2 h-16 bet-red flex text-white items-center justify-center roulette-field"
         @click="setField('RED')"
@@ -27,6 +26,8 @@
         Black
       </div>
     </div>
+
+<button @click="getGameResult">Result</button>
   </div>
 </template>
 
@@ -37,7 +38,7 @@ import { computed } from "vue";
 
 export default {
   setup() {
-    const { setField } = useCryptoStore();
+    const { setField, getGameResult } = useCryptoStore();
     const { activeField } = storeToRefs(useCryptoStore());
 
     const betAvailable = computed((value) => {
@@ -46,6 +47,7 @@ export default {
 
     return {
       setField,
+      getGameResult,
       activeField,
       betAvailable,
     };
@@ -56,17 +58,22 @@ export default {
 .board-wrapper {
   box-shadow: 0px 0px 10px 0px black;
 }
-.selected {
-  box-shadow: inset 0px 0px 0px 3px white;
-}
 .roulette-board {
   max-width: 225px;
+  // border: 1px solid white;
 }
 .roulette-number,
 .roulette-field {
   font-size: 1.5rem;
   font-family: "Inter Tight", sans-serif;
   color: white;
+  cursor: pointer;
+  // border: 1px solid white;
+
+  &:hover,
+  &.selected {
+    box-shadow: inset 0px 0px 0px 3px white;
+  }
 }
 
 $redNumbers: 1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36;
@@ -91,11 +98,5 @@ $blackNumbers: 15, 4, 2, 17, 6, 13, 11, 8, 10, 24, 33, 20, 31, 22, 29, 28, 35,
 
 .bet-black {
   background-color: #292524;
-}
-
-.diamond {
-  width: 30px;
-  height: 30px;
-  transform: rotate(45deg);
 }
 </style>

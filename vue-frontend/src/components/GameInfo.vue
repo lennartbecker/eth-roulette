@@ -7,12 +7,18 @@
     <div class="stat-title">Result available on block</div>
     <div class="stat-value">{{ blockToWaitFor.toString() }}</div>
   </div> -->
-  <div class="gamestatus flex" v-if="gameRunning">
+  <div
+    class="gamestatus flex"
+    v-if="gameRunning"
+  >
     <Spinner />
-    <span>Waiting for result</span>
+    <span>Waiting for next block, please be patient!</span>
   </div>
-  <button class="btn" @click="resetGame" v-if="gameFinished">
+  <button class="btn relative" @click="resetGame" v-if="gameFinished"     :class="{ resetting: resettingGame }">
     {{ resetOrClaim }}
+    <div v-if="resettingGame" class="reset-spinner text-white">
+      <Spinner />
+    </div>
   </button>
 </template>
 
@@ -24,9 +30,8 @@ import Spinner from "./Spinner.vue";
 
 export default {
   setup() {
-    const { latestBlock, blockToWaitFor, gameWon, gameRunning } = storeToRefs(
-      useCryptoStore()
-    );
+    const { latestBlock, blockToWaitFor, gameWon, gameRunning, resettingGame } =
+      storeToRefs(useCryptoStore());
     const { resetGame, getGameResult } = useCryptoStore();
     const resultBlock = computed(() => {
       return blockToWaitFor.value.toString != "0" && gameRunning.value;
@@ -44,10 +49,30 @@ export default {
       gameFinished,
       gameRunning,
       resetOrClaim,
+      resettingGame,
       resetGame,
       getGameResult,
     };
   },
-  components: { Spinner },
+  components: { Spinner, Spinner },
 };
 </script>
+<style lang="scss">
+.resetting {
+  &::before {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    height: 100%;
+    width: 100%;
+    content: "";
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+  .reset-spinner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+</style>

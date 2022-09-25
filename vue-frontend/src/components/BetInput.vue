@@ -13,7 +13,6 @@
     </button>
   </div>
 
-
   <div class="modal" :class="{ 'modal-open': modalOpen }">
     <div class="modal-box" :class="{ loading: confirmLoading }">
       <span class="spinner" v-if="confirmLoading"></span>
@@ -27,6 +26,8 @@
       </div>
     </div>
   </div>
+
+  {{ betAmountAllowed }}
 </template>
 
 <script>
@@ -37,8 +38,14 @@ import { ethers } from "ethers";
 
 export default {
   setup() {
-    const { betAmount, activeField, gameMode, playerBalance, gameRunning } =
-      storeToRefs(useCryptoStore());
+    const {
+      betAmount,
+      activeField,
+      gameMode,
+      playerBalance,
+      gameRunning,
+      bankBalance,
+    } = storeToRefs(useCryptoStore());
     const { placeBet } = useCryptoStore();
 
     const modalOpen = ref(false);
@@ -48,9 +55,21 @@ export default {
       return betAmount.value > 0 &&
         activeField.value != "" &&
         playerBalance.value.toString() != "0" &&
-        !gameRunning.value
+        !gameRunning.value &&
+        betAmountAllowed.value
         ? ""
         : "btn-disabled";
+    });
+
+    const betAmountAllowed = computed(() => {
+      if (gameMode.value == "Plein") {
+        return bankBalance.value.gte(
+          ethers.utils.parseEther(betAmount.value).mul(35)
+        );
+      } else if (gameMode.value == "RedNoir") {
+        return bankBalance.value.gte(ethers.utils.parseEther(betAmount.value));
+      }
+      return false;
     });
 
     function closeModal() {
@@ -71,14 +90,15 @@ export default {
     }
 
     return {
-      betAmount,
+      closeModal,
       placeBetHandler,
+      betAmount,
       activeField,
       gameMode,
       betAvailable,
       modalOpen,
       confirmLoading,
-      closeModal,
+      betAmountAllowed,
     };
   },
 };
