@@ -62,12 +62,12 @@ export default {
     });
 
     const betAmountAllowed = computed(() => {
-      if (gameMode.value == "Plein") {
+      if (gameMode.value == 1) {
         return bankBalance.value.gte(
-          ethers.utils.parseEther(betAmount.value).mul(35)
+          ethers.utils.parseEther(String(betAmount.value)).mul(35)
         );
-      } else if (gameMode.value == "RedNoir") {
-        return bankBalance.value.gte(ethers.utils.parseEther(betAmount.value));
+      } else if (gameMode.value == 0) {
+        return bankBalance.value.gte(ethers.utils.parseEther(String(betAmount.value)));
       }
       return false;
     });
@@ -80,7 +80,7 @@ export default {
     async function placeBetHandler() {
       try {
         confirmLoading.value = true;
-        let bet = await placeBet();
+        await placeBet();
         modalOpen.value = false;
         confirmLoading.value = false;
       } catch (error) {

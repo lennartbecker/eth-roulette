@@ -8,8 +8,8 @@ import confetti from "canvas-confetti";
 const toast = useToast();
 
 const gameModes = Object.freeze({
-  PLEIN: "Plein",
-  REDNOIR: "RedNoir",
+  REDBLACK: 0,
+  PLEIN: 1,
 });
 
 export const useCryptoStore = defineStore("crypto", {
@@ -61,10 +61,12 @@ export const useCryptoStore = defineStore("crypto", {
     },
 
     setGameMode(field) {
-      if (typeof field == "number") {
-        this.gameMode = gameModes.PLEIN;
-      } else {
-        this.gameMode = gameModes.REDNOIR;
+      if (!this.gameRunning) {
+        if (typeof field == "number") {
+          this.gameMode = gameModes.PLEIN;
+        } else {
+          this.gameMode = gameModes.REDBLACK;
+        }
       }
     },
 
@@ -79,12 +81,14 @@ export const useCryptoStore = defineStore("crypto", {
     },
 
     async placeBet() {
+      console.log(this.gameMode, ":gamemode");
       switch (this.gameMode) {
         case gameModes.PLEIN:
           return this.placePleinBet();
-        case gameModes.REDNOIR:
+        case gameModes.REDBLACK:
           return this.placeRedBlackBet();
         default:
+          console.log("none");
           return false;
       }
     },
@@ -94,7 +98,7 @@ export const useCryptoStore = defineStore("crypto", {
         if (this.bankBalance.gte(ethers.utils.parseEther(this.betAmount))) {
           const { rouletteContract } = contractService.getContract();
           const betAmount = ethers.utils.parseEther(this.betAmount);
-          const tx = await rouletteContract.setRougeNoir(
+          const tx = await rouletteContract.setRedBlack(
             rouletteHelper.getRedBlackValue(this.activeField),
             betAmount
           );
@@ -109,39 +113,92 @@ export const useCryptoStore = defineStore("crypto", {
     },
 
     async placePleinBet() {
-      console.log("Plein");
+      console.log(
+        this.bankBalance.gte(ethers.utils.parseEther(this.betAmount).mul(35))
+      );
+      try {
+        if (
+          this.bankBalance.gte(ethers.utils.parseEther(this.betAmount).mul(35))
+        ) {
+          const { rouletteContract } = contractService.getContract();
+          const betAmount = ethers.utils.parseEther(this.betAmount);
+          const tx = await rouletteContract.setPleinBet(
+            this.activeField,
+            betAmount
+          );
+          this.gameRunning = true;
+        } else {
+          toast.error(`Bet is too large`);
+        }
+      } catch (error) {
+        this.handleError(error);
+      }
     },
 
-    async getGameResult() {
+    async fetchGameResult() {
       try {
         this.fetchingGameResult = true;
         const { rouletteContract } = contractService.getContract();
-        let result = await rouletteContract.getRougeNoirResult();
+        let result = await rouletteContract.getGameResult(this.gameMode);
         this.setNumber(result.toString());
         setTimeout(() => {
-          if (
-            rouletteHelper.getFieldColor(result.toString()) == this.activeField
-          ) {
-            toast.success(
-              `Congratulations, you won! Click the button below to claim your prize!`
-            );
-            confetti();
-            this.gameWon = true;
-          } else {
-            toast.error(`You lost! :( Dont forget to reset your game!`);
-            this.fetchBalance();
-          }
-          this.gameRunning = false;
-          this.fetchingGameResult = false;
+          this.handleGameResult(result);
         }, 5000);
       } catch (error) {
         this.handleError(error);
       }
     },
 
+    async handleGameResult(result) {
+      switch (this.gameMode) {
+        case 0:
+          this.handleRedBlackResult(result);
+          break;
+        case 1:
+          this.handlePleinResult(result);
+        default:
+          break;
+      }
+      this.gameRunning = false;
+      this.fetchingGameResult = false;
+    },
+
+    async handlePleinResult(result) {
+      if (result.toString() == this.activeField) {
+        this.handleWin();
+      } else {
+        this.handleLoss();
+      }
+    },
+
+    async handleRedBlackResult(result) {
+      if (rouletteHelper.getFieldColor(result.toString()) == this.activeField) {
+        this.handleWin();
+      } else {
+        this.handleLoss();
+      }
+    },
+
+    async handleLoss() {
+      toast.error(`You lost! :( Dont forget to reset your game!`);
+      this.fetchBalance();
+    },
+
+    async handleWin() {
+      toast.success(
+        `Congratulations, you won! Click the button below to claim your prize!`
+      );
+      confetti();
+      this.gameWon = true;
+    },
+
     async resetGame() {
       const { rouletteContract } = contractService.getContract();
-      await rouletteContract.getRougeNoirPayout();
+      if (this.gamemode == 0) {
+        await rouletteContract.getRedBlackPayout();
+      } else if(this.gamemode == 1) {
+        await rouletteContract.getPleinPayout();
+      }
       this.resettingGame = true;
     },
 
@@ -158,9 +215,6 @@ export const useCryptoStore = defineStore("crypto", {
     async fetchGameState() {
       try {
         const { rouletteContract, provider } = contractService.getContract();
-        this.blockToWaitFor = await rouletteContract.gameBlockHeight(
-          this.account
-        );
         const currentBlock = await provider.getBlock();
         this.setLatestBlockNumber(currentBlock.number);
       } catch (error) {
@@ -174,7 +228,7 @@ export const useCryptoStore = defineStore("crypto", {
         this.blockToWaitFor.toNumber() != 0
       ) {
         this.getActiveField();
-        this.getGameResult();
+        this.fetchGameResult();
       }
     },
 
@@ -218,11 +272,14 @@ export const useCryptoStore = defineStore("crypto", {
         this.balancePending = false;
       });
 
-      rouletteContract.on("BetMade", (player, amount, bet, blockToWaitFor) => {
-        console.log("bet event: wait for block ", blockToWaitFor.toString());
-        toast.success("Bet transaction has been processed.");
-        this.blockToWaitFor = blockToWaitFor;
-      });
+      rouletteContract.on(
+        "BetMade",
+        (player, amount, blockToWaitFor, gamemode) => {
+          console.log("bet event: wait for block ", blockToWaitFor.toString());
+          toast.success("Bet transaction has been processed.");
+          this.blockToWaitFor = blockToWaitFor;
+        }
+      );
 
       rouletteContract.on("GameReset", (player) => {
         toast.success("Game has been reset");
@@ -249,7 +306,7 @@ export const useCryptoStore = defineStore("crypto", {
             this.gameRunning,
             this.fetchingGameResult
           );
-          await this.getGameResult();
+          await this.fetchGameResult();
         }
       });
     },

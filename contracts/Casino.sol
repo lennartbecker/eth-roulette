@@ -1,17 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract Casino {
+contract Casino is ReentrancyGuard {
     enum RedBlack {
         BLACK,
         RED
     }
-    mapping(address => uint256) public gameAmount;
-    mapping(address => uint256) public gameBlockHeight;
-    mapping(address => RedBlack) public rougenoirBet;
-    mapping(address => uint256) public playerBalance;
     mapping(uint256 => RedBlack) public colorValues;
+
+    mapping(address => uint256) public redBlackAmount;
+    mapping(address => uint256) public redBlackBlockHeight;
+    mapping(address => RedBlack) public redblackBet;
+
+    mapping(address => uint256) public pleinBetAmount;
+    mapping(address => uint256) public pleinBetBlockHeight;
+    mapping(address => uint256) public pleinBet;
+
+    mapping(address => uint256) public playerBalance;
 
     uint256 public contractFunds = 0;
 
@@ -19,12 +26,20 @@ contract Casino {
     event BetMade(
         address indexed player,
         uint256 amount,
-        RedBlack bet,
-        uint256 blockNumber
+        uint256 blockNumber,
+        string gameType
     );
     event FundsAdded(address indexed player, uint256 amount);
     event FundsWithdrawn(address indexed player, uint256 amount);
     event GameReset(address indexed player);
+
+    modifier isGameMode(uint256 betAmount) {
+        require(
+            playerBalance[msg.sender] >= betAmount,
+            "Please top up your funds!"
+        );
+        _;
+    }
 
     constructor() payable {
         contractFunds = msg.value;
@@ -36,7 +51,7 @@ contract Casino {
         emit FundsAdded(msg.sender, msg.value);
     }
 
-    function withdraw(uint256 amount) external payable returns (bool) {
+    function withdraw(uint256 amount) external payable nonReentrant returns (bool) {
         require(playerBalance[msg.sender] >= amount, "Not enough funds!");
         playerBalance[msg.sender] -= amount;
         (bool success, ) = msg.sender.call{value: amount}("");
@@ -54,36 +69,35 @@ contract Casino {
         return blockHash % 37;
     }
 
-    function setRougeNoir(uint8 bet, uint256 betAmount) public returns (bool) {
+    function setRedBlack(uint8 bet, uint256 betAmount)
+        public
+        isGameMode(betAmount)
+    {
+        require(betAmount <= contractFunds, "Bet amount is too high");
         require(
-            gameBlockHeight[msg.sender] == 0,
+            redBlackBlockHeight[msg.sender] == 0,
             "Finish your running game first!"
-        );
-        require(
-            playerBalance[msg.sender] > betAmount,
-            "Please top up your funds!"
         );
 
         RedBlack playerBet = RedBlack(bet);
 
-        gameBlockHeight[msg.sender] = block.number + 1;
+        redBlackBlockHeight[msg.sender] = block.number + 1;
         playerBalance[msg.sender] -= betAmount;
         contractFunds += betAmount;
-        gameAmount[msg.sender] = betAmount;
-        rougenoirBet[msg.sender] = playerBet;
-        emit BetMade(msg.sender, betAmount, playerBet, block.number + 1);
-        return true;
+        redBlackAmount[msg.sender] = betAmount;
+        redblackBet[msg.sender] = playerBet;
+        emit BetMade(msg.sender, betAmount, block.number + 1, "RedNoir");
     }
 
-    function getRougeNoirPayout() public returns (bool) {
+    function getRedBlackPayout() public {
         require(
-            blockhash(gameBlockHeight[msg.sender]) != 0,
+            blockhash(redBlackBlockHeight[msg.sender]) != 0,
             "Please make a bet first"
         );
-        uint256 gameNumber = getRouletteNumber(gameBlockHeight[msg.sender]);
+        uint256 gameNumber = getRouletteNumber(redBlackBlockHeight[msg.sender]);
         if (gameNumber > 0) {
-            RedBlack playerBet = rougenoirBet[msg.sender];
-            uint256 playerAmount = gameAmount[msg.sender];
+            RedBlack playerBet = redblackBet[msg.sender];
+            uint256 playerAmount = redBlackAmount[msg.sender];
             RedBlack gameResult = getColorFromNumber(gameNumber);
 
             if (gameResult == playerBet) {
@@ -92,23 +106,73 @@ contract Casino {
             }
         }
 
-        resetRougeNoirGame();
-        return true;
+        resetRedBlackGame();
     }
 
-    function getRougeNoirResult() public view returns (uint256) {
+    function resetRedBlackGame() internal {
+        emit GameReset(msg.sender);
+        redBlackAmount[msg.sender] = 0;
+        redBlackBlockHeight[msg.sender] = 0;
+    }
+
+    function setPleinBet(uint256 bet, uint256 betAmount)
+        external
+        isGameMode(betAmount)
+    {
+        require(betAmount * 35 <= contractFunds, "Bet amount is too high");
         require(
-            blockhash(gameBlockHeight[msg.sender]) != 0,
+            pleinBetBlockHeight[msg.sender] == 0,
+            "Finish your running game first!"
+        );
+        require(bet <= 36, "Bad value");
+
+        pleinBet[msg.sender] = bet;
+        pleinBetAmount[msg.sender] = betAmount;
+        pleinBetBlockHeight[msg.sender] = block.number + 1;
+        playerBalance[msg.sender] -= betAmount;
+        contractFunds += betAmount;
+
+        emit BetMade(msg.sender, betAmount, block.number + 1, "Plein");
+    }
+
+    function getPleinPayout() external {
+        require(
+            blockhash(pleinBetBlockHeight[msg.sender]) != 0,
             "Please make a bet first"
         );
-        uint256 gameNumber = getRouletteNumber(gameBlockHeight[msg.sender]);
-        return gameNumber;
+
+        uint256 gameNumber = getRouletteNumber(pleinBetBlockHeight[msg.sender]);
+        if (gameNumber == pleinBet[msg.sender]) {
+            playerBalance[msg.sender] += pleinBetAmount[msg.sender] * 35;
+            contractFunds -= pleinBetAmount[msg.sender] * 35;
+        }
+
+        resetPleinGame();
     }
 
-    function resetRougeNoirGame() internal {
+    function resetPleinGame() internal {
+        pleinBetAmount[msg.sender] = 0;
+        pleinBetBlockHeight[msg.sender] = 0;
         emit GameReset(msg.sender);
-        gameAmount[msg.sender] = 0;
-        gameBlockHeight[msg.sender] = 0;
+    }
+
+    //Gamemodes: 0 = RedBlack, 1 = plein
+
+    function getGameResult(uint8 gamemode) public view returns (uint256) {
+        if (gamemode == 0) {
+            require(
+                blockhash(redBlackBlockHeight[msg.sender]) != 0,
+                "Please make a bet first"
+            );
+            return getRouletteNumber(redBlackBlockHeight[msg.sender]);
+        } else if (gamemode == 1) {
+            require(
+                blockhash(pleinBetBlockHeight[msg.sender]) != 0,
+                "Please make a bet first"
+            );
+            return getRouletteNumber(pleinBetBlockHeight[msg.sender]);
+        }
+        return 0;
     }
 
     function getColorFromNumber(uint256 number)
