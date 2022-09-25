@@ -5,7 +5,7 @@
         class="roulette-number py-2 px-6 cursor-pointer flex justify-center items-center"
         v-for="i in 36"
         @click="setField(i)"
-        :class="activeField == i ? 'selected' : ''"
+        :class="[activeField == i ? 'selected' : '', `number-${i}`]"
       >
         {{ i }}
       </div>
@@ -52,7 +52,7 @@ export default {
   },
 };
 </script>
-<style>
+<style lang="scss">
 .board-wrapper {
   box-shadow: 0px 0px 10px 0px black;
 }
@@ -68,11 +68,21 @@ export default {
   font-family: "Inter Tight", sans-serif;
   color: white;
 }
-.roulette-number:nth-child(even) {
-  background-color: #292524;
+
+$redNumbers: 1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36;
+$blackNumbers: 15, 4, 2, 17, 6, 13, 11, 8, 10, 24, 33, 20, 31, 22, 29, 28, 35,
+  26;
+
+@each $redNumber in $redNumbers {
+  .number-#{$redNumber} {
+    background-color: #dc2626;
+  }
 }
-.roulette-number:nth-child(odd) {
-  background-color: #dc2626;
+
+@each $blackNumber in $blackNumbers {
+  .number-#{$blackNumber} {
+    background-color: #292524;
+  }
 }
 
 .bet-red {

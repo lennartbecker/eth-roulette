@@ -48,12 +48,14 @@ const gameFinished = computed(() => {
 </script>
 
 <style>
-html, body {
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600&display=swap");
+html,
+body {
   background-color: #1e293b;
+  background-color: #1f2937;
   height: 100%;
 }
 #app {
-  background-color: #1e293b;
   height: 100%;
   font-family: "Inter Tight", sans-serif;
 }
@@ -65,6 +67,4 @@ html, body {
   align-content: center;
   align-items: center;
 }
-
-@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600&display=swap");
 </style>
