@@ -27,7 +27,19 @@
     </div>
   </div>
 
-  {{ betAmountAllowed }}
+  <div class="bet-limits mt-6">
+    <div class="text-sm text-gray-500 mb-0">Betting Limits</div>
+    <div class="flex gap-4">
+      <div class="flex flex-col">
+        <div class="text-lg">{{ pleinLimit }} ETH</div>
+        <div class="txt-sm text-gray-500">Plein</div>
+      </div>
+      <div class="flex flex-col">
+        <div class="text-lg">{{ redBlackLimit }} ETH</div>
+        <div class="txt-sm text-gray-500">Red/Black</div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -67,9 +79,23 @@ export default {
           ethers.utils.parseEther(String(betAmount.value)).mul(35)
         );
       } else if (gameMode.value == 0) {
-        return bankBalance.value.gte(ethers.utils.parseEther(String(betAmount.value)));
+        return bankBalance.value.gte(
+          ethers.utils.parseEther(String(betAmount.value))
+        );
       }
       return false;
+    });
+
+    const pleinLimit = computed(() => {
+      const betLimit = bankBalance.value.div(35);
+      const remainder = betLimit.mod(100000000000000);
+      return ethers.utils.formatEther(betLimit.sub(remainder));
+    });
+
+    const redBlackLimit = computed(() => {
+      const betLimit = bankBalance.value.div(2);
+      const remainder = betLimit.mod(100000000000000);
+      return ethers.utils.formatEther(betLimit.sub(remainder));
     });
 
     function closeModal() {
@@ -99,6 +125,8 @@ export default {
       modalOpen,
       confirmLoading,
       betAmountAllowed,
+      pleinLimit,
+      redBlackLimit,
     };
   },
 };

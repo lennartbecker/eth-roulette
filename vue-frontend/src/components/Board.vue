@@ -26,8 +26,6 @@
         Black
       </div>
     </div>
-
-<button @click="getGameResult">Result</button>
   </div>
 </template>
 
