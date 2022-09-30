@@ -8,4 +8,5 @@ typechain-types
 #Hardhat files
 cache
 artifacts
+!artifacts/contracts/Casino.sol/Casino.json
 
