@@ -20,8 +20,6 @@ contract Casino is ReentrancyGuard {
 
     mapping(address => uint256) public playerBalance;
 
-    uint256 public contractFunds = 0;
-
     event GameResult(address indexed player, uint256 betAmount, bool won);
     event BetMade(
         address indexed player,
@@ -33,6 +31,8 @@ contract Casino is ReentrancyGuard {
     event FundsWithdrawn(address indexed player, uint256 amount);
     event GameReset(address indexed player);
 
+    address payable public bank;
+
     modifier isGameMode(uint256 betAmount) {
         require(
             playerBalance[msg.sender] >= betAmount,
@@ -42,7 +42,8 @@ contract Casino is ReentrancyGuard {
     }
 
     constructor() payable {
-        contractFunds = msg.value;
+        bank = payable(msg.sender);
+        playerBalance[bank] += msg.value;
         setRedValues();
     }
 
@@ -73,7 +74,7 @@ contract Casino is ReentrancyGuard {
         public
         isGameMode(betAmount)
     {
-        require(betAmount <= contractFunds, "Bet amount is too high");
+        require(betAmount <= playerBalance[bank], "Bet amount is too high");
         require(
             redBlackBlockHeight[msg.sender] == 0,
             "Finish your running game first!"
@@ -83,7 +84,7 @@ contract Casino is ReentrancyGuard {
 
         redBlackBlockHeight[msg.sender] = block.number + 1;
         playerBalance[msg.sender] -= betAmount;
-        contractFunds += betAmount;
+        playerBalance[bank] += betAmount;
         redBlackAmount[msg.sender] = betAmount;
         redblackBet[msg.sender] = playerBet;
         emit BetMade(msg.sender, betAmount, block.number + 1, "RedNoir");
@@ -102,7 +103,7 @@ contract Casino is ReentrancyGuard {
 
             if (gameResult == playerBet) {
                 playerBalance[msg.sender] += playerAmount * 2;
-                contractFunds -= playerAmount * 2;
+                playerBalance[bank] -= playerAmount * 2;
             }
         }
 
@@ -119,7 +120,7 @@ contract Casino is ReentrancyGuard {
         external
         isGameMode(betAmount)
     {
-        require(betAmount * 35 <= contractFunds, "Bet amount is too high");
+        require(betAmount * 35 <= playerBalance[bank], "Bet amount is too high");
         require(
             pleinBetBlockHeight[msg.sender] == 0,
             "Finish your running game first!"
@@ -130,7 +131,7 @@ contract Casino is ReentrancyGuard {
         pleinBetAmount[msg.sender] = betAmount;
         pleinBetBlockHeight[msg.sender] = block.number + 1;
         playerBalance[msg.sender] -= betAmount;
-        contractFunds += betAmount;
+        playerBalance[bank] += betAmount;
 
         emit BetMade(msg.sender, betAmount, block.number + 1, "Plein");
     }
@@ -144,7 +145,7 @@ contract Casino is ReentrancyGuard {
         uint256 gameNumber = getRouletteNumber(pleinBetBlockHeight[msg.sender]);
         if (gameNumber == pleinBet[msg.sender]) {
             playerBalance[msg.sender] += pleinBetAmount[msg.sender] * 35;
-            contractFunds -= pleinBetAmount[msg.sender] * 35;
+            playerBalance[bank] -= pleinBetAmount[msg.sender] * 35;
         }
 
         resetPleinGame();
