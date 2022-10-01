@@ -194,9 +194,10 @@ export const useCryptoStore = defineStore("crypto", {
 
     async resetGame() {
       const { rouletteContract } = contractService.getContract();
-      if (this.gamemode == 0) {
+      console.log("Resetting game")
+      if (this.gameMode == 0) {
         await rouletteContract.getRedBlackPayout();
-      } else if (this.gamemode == 1) {
+      } else if (this.gameMode == 1) {
         await rouletteContract.getPleinPayout();
       }
       this.resettingGame = true;
@@ -297,6 +298,7 @@ export const useCryptoStore = defineStore("crypto", {
           console.log("bet event: wait for block ", blockToWaitFor.toString());
           toast.success("Bet transaction has been processed.");
           this.blockToWaitFor = blockToWaitFor;
+          this.fetchBalance();
         }
       );
 

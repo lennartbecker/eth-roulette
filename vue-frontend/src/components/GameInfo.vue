@@ -14,7 +14,7 @@
     <Spinner />
     <span>Waiting for next block, please be patient!</span>
   </div>
-  <button class="btn relative" @click="resetGame" v-if="gameFinished"     :class="{ resetting: resettingGame }">
+  <button class="btn relative" @click="resetGame" v-if="gameFinished" :class="{ resetting: resettingGame }">
     {{ resetOrClaim }}
     <div v-if="resettingGame" class="reset-spinner text-white">
       <Spinner />

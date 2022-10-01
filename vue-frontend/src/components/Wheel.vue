@@ -73,13 +73,15 @@ export default {
   }
 
   .wheel-indicator {
-    height: 20px;
-    width: 10px;
     position: absolute;
     top: -20px;
-    background: white;
     left: 50%;
     transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 20px 10px 0 10px;
+    border-color: #ffffff transparent transparent transparent;
   }
 }
 

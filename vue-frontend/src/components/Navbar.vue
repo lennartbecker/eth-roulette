@@ -5,8 +5,10 @@
       <p>Bank balance: {{ contractBalance }}ETH</p>
     </div>
     <div class="navbar-end">
-      <a class="btn" @click="connectWallet">Connect Metamask</a>
-      {{ account }}
+      <div class="bg-dark btn cursor-default focus:none normal-case">
+        Connected:
+        {{ accountShortened }}
+      </div>
     </div>
   </div>
 </template>
@@ -27,9 +29,16 @@ export default {
       return ethers.utils.formatEther(bankBalance.value.sub(remainder));
     });
 
+    const accountShortened = computed(() => {
+      return `${account.value.substring(0, 6)}...${account.value.substring(
+        account.value.length - 4
+      )}`;
+    });
+
     return {
       connectWallet,
       account,
+      accountShortened,
       contractBalance,
     };
   },

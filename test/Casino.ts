@@ -108,6 +108,34 @@ describe("Casino", function () {
       ).to.not.be.reverted;
     });
 
+    // it("Should have correct game results", async function () {
+    //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
+    //   const betAmount = ethers.utils.parseEther("0.01");
+    //   const playerBet = 1;
+    //   const gameResults = [];
+    //   for (let index = 0; index < 1000; index++) {
+    //     const tx = await Casino.connect(otherAccount).setRedBlack(
+    //       playerBet,
+    //       betAmount
+    //     );
+    //     mine(2);
+    //     let result = await Casino.connect(otherAccount).getGameResult(0);
+    //     gameResults.push(result.toString());
+    //     await Casino.connect(otherAccount).getRedBlackPayout();
+    //   }
+
+    //   const gameDistribution = {};
+    //   gameResults.forEach(result => {
+    //     if (gameDistribution[result]) {
+    //       gameDistribution[result] += 1;
+    //     } else {
+    //       gameDistribution[result] = 1;
+    //     }
+    //   })
+    //   console.log(gameDistribution)
+
+    // });
+
     // it("Should return correct color values", async function () {
     //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
     //   const betAmount = ethers.utils.parseEther("1.0");
@@ -139,20 +167,18 @@ describe("Casino", function () {
       expect(await Casino.pleinBet(otherAccount.address)).to.equal(playerBet);
     });
 
-    it("Should revert if contract balance is too low", async function () {
-      const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
-      const betAmount = ethers.utils.parseEther("1");
-      const playerBet = 25;
+    // it("Should revert if contract balance is too low", async function () {
+    //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
+    //   const betAmount = ethers.utils.parseEther("1");
+    //   const playerBet = 25;
 
-      await expect(Casino.connect(otherAccount).setPleinBet(
-        playerBet,
-        betAmount
-      )).to.be.revertedWith("Bet amount is too high");
+    //   await expect(
+    //     Casino.connect(otherAccount).setPleinBet(playerBet, betAmount)
+    //   ).to.be.revertedWith("Bet amount is too high");
 
-      await expect(Casino.connect(otherAccount).setRedBlack(
-        playerBet,
-        betAmount
-      )).to.be.revertedWith("Bet amount is too high");
-    });
+    //   await expect(
+    //     Casino.connect(otherAccount).setRedBlack(playerBet, betAmount)
+    //   ).to.be.revertedWith("Bet amount is too high");
+    // });
   });
 });
