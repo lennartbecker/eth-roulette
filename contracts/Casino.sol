@@ -52,7 +52,16 @@ contract Casino is ReentrancyGuard {
         emit FundsAdded(msg.sender, msg.value);
     }
 
-    function withdraw(uint256 amount) external payable nonReentrant returns (bool) {
+    function getContractFunds() external view returns (uint256) {
+        return playerBalance[bank];
+    }
+
+    function withdraw(uint256 amount)
+        external
+        payable
+        nonReentrant
+        returns (bool)
+    {
         require(playerBalance[msg.sender] >= amount, "Not enough funds!");
         playerBalance[msg.sender] -= amount;
         (bool success, ) = msg.sender.call{value: amount}("");
@@ -120,7 +129,10 @@ contract Casino is ReentrancyGuard {
         external
         isGameMode(betAmount)
     {
-        require(betAmount * 35 <= playerBalance[bank], "Bet amount is too high");
+        require(
+            betAmount * 35 <= playerBalance[bank],
+            "Bet amount is too high"
+        );
         require(
             pleinBetBlockHeight[msg.sender] == 0,
             "Finish your running game first!"
@@ -174,6 +186,14 @@ contract Casino is ReentrancyGuard {
             return getRouletteNumber(pleinBetBlockHeight[msg.sender]);
         }
         return 0;
+    }
+
+    function getCurrentGameMode() public view returns (uint256) {
+        if (pleinBetBlockHeight[msg.sender] != 0) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
     function getColorFromNumber(uint256 number)

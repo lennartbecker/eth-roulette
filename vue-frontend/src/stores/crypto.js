@@ -45,7 +45,7 @@ export const useCryptoStore = defineStore("crypto", {
         await this.fetchBalance();
         await this.addEventListeners();
         await this.fetchGameState();
-        // await this.checkRunningGame();
+        await this.checkRunningGame();
       } catch (error) {
         this.handleError(error);
       }
@@ -70,11 +70,11 @@ export const useCryptoStore = defineStore("crypto", {
       }
     },
 
-    async getActiveField() {
-      const { rouletteContract } = contractService.getContract();
-      let playerBet = await rouletteContract.rougenoirBet(this.account);
-      this.activeField = rouletteHelper.enumToColor(playerBet);
-    },
+    // async getActiveField() {
+    //   const { rouletteContract } = contractService.getContract();
+    //   let playerBet = await rouletteContract.rougenoirBet(this.account);
+    //   this.activeField = rouletteHelper.enumToColor(playerBet);
+    // },
 
     setLatestBlockNumber(block) {
       this.latestBlock = block;
@@ -196,7 +196,7 @@ export const useCryptoStore = defineStore("crypto", {
       const { rouletteContract } = contractService.getContract();
       if (this.gamemode == 0) {
         await rouletteContract.getRedBlackPayout();
-      } else if(this.gamemode == 1) {
+      } else if (this.gamemode == 1) {
         await rouletteContract.getPleinPayout();
       }
       this.resettingGame = true;
@@ -206,7 +206,7 @@ export const useCryptoStore = defineStore("crypto", {
       try {
         const { rouletteContract } = contractService.getContract();
         this.playerBalance = await rouletteContract.playerBalance(this.account);
-        this.bankBalance = await rouletteContract.contractFunds();
+        this.bankBalance = await rouletteContract.getContractFunds();
       } catch (error) {
         console.log(error);
       }
@@ -216,20 +216,20 @@ export const useCryptoStore = defineStore("crypto", {
       try {
         const { rouletteContract, provider } = contractService.getContract();
         const currentBlock = await provider.getBlock();
-        this.setLatestBlockNumber(currentBlock.number);
+        this.setLatestBlockNumber(currentBlock.number);        
       } catch (error) {
         this.handleError(error);
       }
     },
 
     checkRunningGame() {
-      if (
-        this.blockToWaitFor.toNumber() >= this.latestBlock &&
-        this.blockToWaitFor.toNumber() != 0
-      ) {
-        this.getActiveField();
-        this.fetchGameResult();
-      }
+      // if (
+      //   this.blockToWaitFor.toNumber() >= this.latestBlock &&
+      //   this.blockToWaitFor.toNumber() != 0
+      // ) {
+      //   this.getActiveField();
+      //   this.fetchGameResult();
+      // }
     },
 
     async withdraw(amount) {
@@ -258,14 +258,33 @@ export const useCryptoStore = defineStore("crypto", {
     async addEventListeners() {
       const { rouletteContract, provider } = contractService.getContract();
 
-      rouletteContract.on("FundsAdded", async (player, amount) => {
+      const fundsAddedEvent = rouletteContract.filters.FundsAdded(
+        this.account,
+        null
+      );
+
+      const fundsWithdrawnEvent = rouletteContract.filters.FundsWithdrawn(
+        this.account,
+        null
+      );
+
+      const betMadeEvent = rouletteContract.filters.BetMade(
+        this.account,
+        null,
+        null,
+        null
+      );
+
+      const gameResetEvent = rouletteContract.filters.GameReset(this.account);
+
+      rouletteContract.on(fundsAddedEvent, async (player, amount) => {
         await this.fetchBalance();
         const amountAsNumber = ethers.utils.formatEther(amount);
         toast.success(`Deposit of ${amountAsNumber} ETH successful!`);
         this.balancePending = false;
       });
 
-      rouletteContract.on("FundsWithdrawn", (player, amount) => {
+      rouletteContract.on(fundsWithdrawnEvent, (player, amount) => {
         this.fetchBalance();
         const amountAsNumber = ethers.utils.formatEther(amount);
         toast.success(`Withdrawal of ${amountAsNumber} ETH successful!`);
@@ -273,7 +292,7 @@ export const useCryptoStore = defineStore("crypto", {
       });
 
       rouletteContract.on(
-        "BetMade",
+        betMadeEvent,
         (player, amount, blockToWaitFor, gamemode) => {
           console.log("bet event: wait for block ", blockToWaitFor.toString());
           toast.success("Bet transaction has been processed.");
@@ -281,7 +300,7 @@ export const useCryptoStore = defineStore("crypto", {
         }
       );
 
-      rouletteContract.on("GameReset", (player) => {
+      rouletteContract.on(gameResetEvent, (player) => {
         toast.success("Game has been reset");
         this.resettingGame = false;
         this.gameWon = false;
