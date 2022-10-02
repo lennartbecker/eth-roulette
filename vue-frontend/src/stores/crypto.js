@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS;
 import { defineStore } from "pinia";
 import rouletteHelper from "../helpers/rouletteHelper";
 import { contractService } from "../service/contractService";
@@ -194,7 +194,7 @@ export const useCryptoStore = defineStore("crypto", {
 
     async resetGame() {
       const { rouletteContract } = contractService.getContract();
-      console.log("Resetting game")
+      console.log("Resetting game");
       if (this.gameMode == 0) {
         await rouletteContract.getRedBlackPayout();
       } else if (this.gameMode == 1) {
@@ -206,7 +206,7 @@ export const useCryptoStore = defineStore("crypto", {
     async fetchBalance() {
       try {
         const { rouletteContract } = contractService.getContract();
-        this.playerBalance = await rouletteContract.playerBalance(this.account);
+        // this.playerBalance = await rouletteContract.playerBalance(this.account);
         this.bankBalance = await rouletteContract.getContractFunds();
       } catch (error) {
         console.log(error);
@@ -217,7 +217,7 @@ export const useCryptoStore = defineStore("crypto", {
       try {
         const { rouletteContract, provider } = contractService.getContract();
         const currentBlock = await provider.getBlock();
-        this.setLatestBlockNumber(currentBlock.number);        
+        this.setLatestBlockNumber(currentBlock.number);
       } catch (error) {
         this.handleError(error);
       }
