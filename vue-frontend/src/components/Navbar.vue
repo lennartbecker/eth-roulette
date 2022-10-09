@@ -1,5 +1,5 @@
 <template>
-  <div class="navbar bg-base-100 rounded-box shadow-xl">
+  <div class="navbar bg-base-100 shadow-xl rounded-t-none">
     <div class="flex-1">
       <a class="btn btn-ghost normal-case text-xl">Roulette</a>
       <p>Bank balance: {{ contractBalance }}ETH</p>

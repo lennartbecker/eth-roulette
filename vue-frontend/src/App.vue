@@ -19,7 +19,6 @@ const { account } = storeToRefs(useCryptoStore());
 html,
 body {
   background-color: #1e293b;
-  background-color: #1f2937;
   height: 100%;
 }
 #app {
