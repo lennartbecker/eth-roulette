@@ -206,7 +206,7 @@ export const useCryptoStore = defineStore("crypto", {
     async fetchBalance() {
       try {
         const { rouletteContract } = contractService.getContract();
-        // this.playerBalance = await rouletteContract.playerBalance(this.account);
+        this.playerBalance = await rouletteContract.playerBalance(this.account);
         this.bankBalance = await rouletteContract.getContractFunds();
       } catch (error) {
         console.log(error);

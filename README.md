@@ -1,13 +1,7 @@
-# Sample Hardhat Project
+# ETH Roulette
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+Description: Ethereum Roulette Dapp created with Hardhat & Vue 3
 
-Try running some of the following tasks:
+This is a simple Roulette dApp where you can bet on either Red / Black or a specific number.
+Notice: The random number generation is done using the hash of the next block, so it isn't terribly secure and should not be used with real funds!
 
-```shell
-npx hardhat help
-npx hardhat test
-GAS_REPORT=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
-```

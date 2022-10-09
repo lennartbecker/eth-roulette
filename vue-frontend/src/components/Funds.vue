@@ -61,7 +61,7 @@
 import { useCryptoStore } from "../stores/crypto";
 import { storeToRefs } from "pinia";
 import { ethers } from "ethers";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import Spinner from "./Spinner.vue";
 
 export default {
@@ -76,6 +76,15 @@ export default {
     const depositLoading = ref(false);
     const withdrawModalOpen = ref(false);
     const withdrawLoading = ref(false);
+
+    watch(depositAmount, async () => {
+      depositAmount.value = depositAmount.value.replace(/,/g, ".");
+    });
+
+    watch(withdrawalAmount, async () => {
+      withdrawalAmount.value = withdrawalAmount.value.replace(/,/g, ".");
+    });
+
     async function initiateDeposit() {
       depositLoading.value = true;
       await deposit(String(depositAmount.value));
@@ -83,6 +92,7 @@ export default {
       depositModalOpen.value = false;
       depositAmount.value = 0;
     }
+
     async function initiateWithdrawal() {
       withdrawLoading.value = true;
       await withdraw(String(withdrawalAmount.value));
@@ -90,10 +100,12 @@ export default {
       withdrawModalOpen.value = false;
       withdrawalAmount.value = 0;
     }
+
     const ETHbalance = computed(() => {
-      const remainder = playerBalance.value.mod(100000000000000);
+      const remainder = playerBalance.value.mod(100000000000);
       return ethers.utils.formatEther(playerBalance.value.sub(remainder));
     });
+
     return {
       initiateDeposit,
       initiateWithdrawal,

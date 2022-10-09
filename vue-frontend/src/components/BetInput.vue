@@ -45,7 +45,7 @@
 <script>
 import { useCryptoStore } from "../stores/crypto";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { ethers } from "ethers";
 
 export default {
@@ -62,6 +62,10 @@ export default {
 
     const modalOpen = ref(false);
     const confirmLoading = ref(false);
+
+    watch(betAmount, async () => {
+      betAmount.value = betAmount.value.replace(/,/g, ".");
+    });
 
     const betAvailable = computed(() => {
       return betAmount.value > 0 &&
