@@ -2,7 +2,7 @@
   <div class="navbar bg-base-100 shadow-xl rounded-t-none">
     <div class="flex-1">
       <a class="btn btn-ghost normal-case text-xl">Roulette</a>
-      <p>Bank balance: {{ contractBalance }}ETH</p>
+      <p>Bank balance: {{ contractBalance }} ETH</p>
     </div>
     <div class="navbar-end">
       <div class="bg-dark btn cursor-default focus:none normal-case">
