@@ -1,5 +1,4 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -27,10 +26,10 @@ describe("Casino", function () {
 
   describe("Deployment", function () {
     it("Contract should have correct funding", async function () {
-      const { Casino, initialFunds, otherAccount, initialPlayerFunds } =
+      const { Casino, initialFunds, owner, otherAccount, initialPlayerFunds } =
         await loadFixture(deployCasinoFixture);
 
-      expect(await Casino.contractFunds()).to.equal(initialFunds);
+      expect(await Casino.playerBalance(owner.address)).to.equal(initialFunds);
       expect(await Casino.playerBalance(otherAccount.address)).to.equal(
         initialPlayerFunds
       );
@@ -107,49 +106,6 @@ describe("Casino", function () {
         await Casino.connect(otherAccount).setRedBlack(playerBet, betAmount)
       ).to.not.be.reverted;
     });
-
-    // it("Should have correct game results", async function () {
-    //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
-    //   const betAmount = ethers.utils.parseEther("0.01");
-    //   const playerBet = 1;
-    //   const gameResults = [];
-    //   for (let index = 0; index < 1000; index++) {
-    //     const tx = await Casino.connect(otherAccount).setRedBlack(
-    //       playerBet,
-    //       betAmount
-    //     );
-    //     mine(2);
-    //     let result = await Casino.connect(otherAccount).getGameResult(0);
-    //     gameResults.push(result.toString());
-    //     await Casino.connect(otherAccount).getRedBlackPayout();
-    //   }
-
-    //   const gameDistribution = {};
-    //   gameResults.forEach(result => {
-    //     if (gameDistribution[result]) {
-    //       gameDistribution[result] += 1;
-    //     } else {
-    //       gameDistribution[result] = 1;
-    //     }
-    //   })
-    //   console.log(gameDistribution)
-
-    // });
-
-    // it("Should return correct color values", async function () {
-    //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
-    //   const betAmount = ethers.utils.parseEther("1.0");
-    //   const playerBet = 1;
-    //   const numColors = [];
-    //   for (let index = 0; index < 37; index++) {
-    //     const numColor = await Casino.connect(otherAccount).colorValues(index);
-    //     numColors.push({
-    //       number: index,
-    //       color: numColor ? "RED" : "BLACK",
-    //     });
-    //   }
-    //   console.log(numColors);
-    // });
   });
 
   describe("Plein game", function () {
@@ -166,19 +122,5 @@ describe("Casino", function () {
       );
       expect(await Casino.pleinBet(otherAccount.address)).to.equal(playerBet);
     });
-
-    // it("Should revert if contract balance is too low", async function () {
-    //   const { Casino, otherAccount } = await loadFixture(deployCasinoFixture);
-    //   const betAmount = ethers.utils.parseEther("1");
-    //   const playerBet = 25;
-
-    //   await expect(
-    //     Casino.connect(otherAccount).setPleinBet(playerBet, betAmount)
-    //   ).to.be.revertedWith("Bet amount is too high");
-
-    //   await expect(
-    //     Casino.connect(otherAccount).setRedBlack(playerBet, betAmount)
-    //   ).to.be.revertedWith("Bet amount is too high");
-    // });
   });
 });

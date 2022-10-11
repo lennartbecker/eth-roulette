@@ -1,6 +1,6 @@
 # ETH Roulette
 
-This is a simple Roulette dApp where you can bet on either Red / Black or a specific number.
+This is a Roulette game dApp where you can bet on either Red / Black or a specific number.
 <p align="center">
   <img src="./demo.gif" height="80%" width="80%">
 </p>
