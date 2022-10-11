@@ -19,6 +19,7 @@
   <div class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg">How to play</h3>
+      <div class="font-bold">Make sure you're connected to the Goerli Testnet!</div>
       <p class="py-4">
         <ol class="list-decimal">
           <li>Login with your metamask account (verify you're on the correct network)</li>
