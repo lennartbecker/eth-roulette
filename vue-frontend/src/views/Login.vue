@@ -11,6 +11,9 @@
             Connect Metamask
           </button>
         </div>
+        <a class="github-link" href="https://github.com/lennartbecker/eth-roulette" target="_blank">
+          <img src="@/assets/github.png" alt="" srcset="" />
+        </a>
       </div>
     </div>
   </div>
@@ -58,6 +61,12 @@ export default {
   transform: translate(-50%, -50%);
   filter: blur(10px);
   animation: rotate 30s linear infinite;
+}
+
+.github-link {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
 }
 
 @keyframes rotate {
