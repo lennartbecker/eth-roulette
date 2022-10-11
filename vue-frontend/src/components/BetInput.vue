@@ -18,7 +18,7 @@
       <span class="spinner" v-if="confirmLoading"></span>
       <h3 class="font-bold text-lg">Confirm bet</h3>
       <p>Amount: {{ betAmount }}ETH</p>
-      <p>Gamemode: {{ gameMode }}</p>
+      <p>Gamemode: {{ gameModeName }}</p>
       <p>Field: {{ activeField }}</p>
       <div class="modal-action">
         <button class="btn" @click="closeModal">Abort</button>
@@ -77,6 +77,10 @@ export default {
         : "btn-disabled";
     });
 
+    const gameModeName = computed(() => {
+      return gameMode.value == 0 ? "Red / Black" : "Plein"
+    })
+
     const betAmountAllowed = computed(() => {
       if (gameMode.value == 1) {
         return bankBalance.value.gte(
@@ -122,6 +126,7 @@ export default {
     return {
       closeModal,
       placeBetHandler,
+      gameModeName,
       betAmount,
       activeField,
       gameMode,

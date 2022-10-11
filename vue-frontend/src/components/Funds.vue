@@ -90,7 +90,7 @@ export default {
       await deposit(String(depositAmount.value));
       depositLoading.value = false;
       depositModalOpen.value = false;
-      depositAmount.value = 0;
+      depositAmount.value = "0";
     }
 
     async function initiateWithdrawal() {
@@ -98,7 +98,7 @@ export default {
       await withdraw(String(withdrawalAmount.value));
       withdrawLoading.value = false;
       withdrawModalOpen.value = false;
-      withdrawalAmount.value = 0;
+      withdrawalAmount.value = "0";
     }
 
     const ETHbalance = computed(() => {
